@@ -3,6 +3,7 @@ import { AuthModule } from './auth/auth.module';
 import { PrismaModule } from './prisma/prisma.module';
 import { ConfigModule } from '@nestjs/config';
 import { UserModule } from './user/user.module';
+import { BoardModule } from './board/board.module';
 import { CategoryModule } from './category/category.module';
 import { RoleModule } from './role/role.module';
 
@@ -14,6 +15,7 @@ import { RoleModule } from './role/role.module';
       isGlobal: true,
     }),
     UserModule,
+    BoardModule,
     CategoryModule,
     RoleModule,
   ],
