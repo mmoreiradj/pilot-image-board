@@ -5,6 +5,7 @@ import { ConfigModule } from '@nestjs/config';
 import { UserModule } from './user/user.module';
 import { BoardModule } from './board/board.module';
 import { CategoryModule } from './category/category.module';
+import { ThreadModule } from './thread/thread.module';
 import { RoleModule } from './role/role.module';
 
 @Module({
@@ -17,6 +18,7 @@ import { RoleModule } from './role/role.module';
     UserModule,
     BoardModule,
     CategoryModule,
+    ThreadModule,
     RoleModule,
   ],
   controllers: [],
