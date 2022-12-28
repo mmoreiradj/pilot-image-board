@@ -6,6 +6,7 @@ import { UserModule } from './user/user.module';
 import { BoardModule } from './board/board.module';
 import { CategoryModule } from './category/category.module';
 import { ThreadModule } from './thread/thread.module';
+import { PostModule } from './post/post.module';
 import { RoleModule } from './role/role.module';
 
 @Module({
@@ -19,6 +20,7 @@ import { RoleModule } from './role/role.module';
     BoardModule,
     CategoryModule,
     ThreadModule,
+    PostModule,
     RoleModule,
   ],
   controllers: [],
