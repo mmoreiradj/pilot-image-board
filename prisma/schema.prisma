@@ -1,0 +1,111 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id        Int      @id @default(autoincrement())
+  createdAt DateTime @default(now())
+  updatedAt DateTime @default(now()) @updatedAt
+
+  username String @unique
+  hash     String
+
+  description String?
+
+  posts   Post[]
+  threads Thread[]
+  roles   User_role[]
+
+  @@map("user")
+}
+
+model User_role {
+  userId Int
+  user   User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  roleId Int
+  role   Role @relation(fields: [roleId], references: [id], onDelete: Cascade)
+
+  @@id([userId, roleId])
+  @@index([userId, roleId], name: "user_roles_user_id_role_id_index")
+  @@map("user_role")
+}
+
+model Board {
+  id        Int      @id @default(autoincrement())
+  createdAt DateTime @default(now())
+  updatedAt DateTime @default(now()) @updatedAt
+
+  title       String  @unique
+  description String?
+
+  categoryId Int
+  category   Category @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+
+  threads Thread[]
+
+  @@map("board")
+}
+
+model Category {
+  id        Int      @id @default(autoincrement())
+  createdAt DateTime @default(now())
+  updatedAt DateTime @default(now()) @updatedAt
+
+  name        String  @unique
+  description String
+  boards      Board[]
+
+  @@map("category")
+}
+
+model Thread {
+  id        Int      @id @default(autoincrement())
+  createdAt DateTime @default(now())
+  updatedAt DateTime @default(now()) @updatedAt
+
+  title       String
+  description String
+
+  boardId Int
+  board   Board @relation(fields: [boardId], references: [id], onDelete: Cascade)
+
+  creatorId Int
+  user      User   @relation(fields: [creatorId], references: [id], onDelete: Cascade)
+  posts     Post[]
+
+  @@map("thread")
+}
+
+model Post {
+  id        Int      @id @default(autoincrement())
+  createdAt DateTime @default(now())
+  updatedAt DateTime @default(now()) @updatedAt
+
+  description String
+
+  creatorId Int
+  user      User @relation(fields: [creatorId], references: [id], onDelete: Cascade)
+
+  threadId Int
+  thread   Thread @relation(fields: [threadId], references: [id], onDelete: Cascade)
+
+  @@map("post")
+}
+
+model Role {
+  id Int @id @default(autoincrement())
+
+  name  String      @unique
+  users User_role[]
+
+  @@map("role")
+}
