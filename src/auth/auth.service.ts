@@ -6,6 +6,7 @@ import { PrismaClientKnownRequestError } from '@prisma/client/runtime';
 import { JwtService } from '@nestjs/jwt';
 import { ConfigService } from '@nestjs/config';
 import { PilotError } from '../pilot.error';
+import { readFileSync } from 'fs';
 
 @Injectable()
 export class AuthService {
@@ -90,12 +91,12 @@ export class AuthService {
 
     const accessToken = await this.jwt.signAsync(payload, {
       expiresIn: this.config.get('JWT_EXPIRES_IN'),
-      secret: this.config.get('JWT_SECRET'),
+      secret: readFileSync(this.config.get('JWT_SECRET_PATH')),
     });
 
     const refreshToken = await this.jwt.signAsync(payload, {
       expiresIn: this.config.get('JWT_REFRESH_EXPIRES_IN'),
-      secret: this.config.get('JWT_REFRESH_SECRET'),
+      secret: readFileSync(this.config.get('JWT_REFRESH_SECRET_PATH')),
     });
 
     return {
@@ -105,7 +106,7 @@ export class AuthService {
   }
 
   async refresh(payload: any) {
-    const user = await this.prisma.user.findFirst({
+    const user = await this.prisma.user.findUnique({
       include: {
         roles: {
           select: {
@@ -114,7 +115,7 @@ export class AuthService {
         },
       },
       where: {
-        id: payload.sub,
+        id: payload.id,
       },
     });
 

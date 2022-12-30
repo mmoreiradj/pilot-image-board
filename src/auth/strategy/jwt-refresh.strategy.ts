@@ -2,6 +2,7 @@ import { PassportStrategy } from '@nestjs/passport';
 import { ExtractJwt, Strategy } from 'passport-jwt';
 import { Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
+import { readFileSync } from 'fs';
 
 @Injectable()
 export class JwtRefreshStrategy extends PassportStrategy(
@@ -11,13 +12,12 @@ export class JwtRefreshStrategy extends PassportStrategy(
   constructor(private readonly config: ConfigService) {
     super({
       jwtFromRequest: ExtractJwt.fromAuthHeaderAsBearerToken(),
-      secretOrKey: config.get('JWT_REFRESH_SECRET'),
+      secretOrKey: readFileSync(config.get('JWT_REFRESH_PUBLIC_PATH')),
       ignoreExpiration: false,
-      passReqToCallback: true,
     });
   }
 
   validate(payload: any) {
-    return { ...payload };
+    return payload;
   }
 }
