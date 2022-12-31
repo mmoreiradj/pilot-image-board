@@ -74,6 +74,7 @@ model Thread {
 
   title       String
   description String
+  image       String @default("")
 
   boardId Int
   board   Board @relation(fields: [boardId], references: [id], onDelete: Cascade)
@@ -91,6 +92,7 @@ model Post {
   updatedAt DateTime @default(now()) @updatedAt
 
   description String
+  image       String @default("")
 
   creatorId Int
   user      User @relation(fields: [creatorId], references: [id], onDelete: Cascade)

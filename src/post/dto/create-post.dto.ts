@@ -1,6 +1,7 @@
 import {
   IsNotEmpty,
   IsNumber,
+  IsOptional,
   IsPositive,
   IsString,
   MaxLength,
@@ -16,4 +17,8 @@ export class CreatePostDto {
   @IsNumber()
   @IsPositive()
   threadId: number;
+
+  @IsOptional()
+  @IsString()
+  image?: string;
 }

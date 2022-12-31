@@ -15,8 +15,7 @@ export class PostService {
     try {
       return this.prisma.post.create({
         data: {
-          threadId: createPostDto.threadId,
-          description: createPostDto.description,
+          ...createPostDto,
           creatorId: userId,
         },
       });
