@@ -8,6 +8,7 @@ import { CategoryModule } from './category/category.module';
 import { ThreadModule } from './thread/thread.module';
 import { PostModule } from './post/post.module';
 import { RoleModule } from './role/role.module';
+import { HealthModule } from './health/health.module';
 
 @Module({
   imports: [
@@ -22,6 +23,7 @@ import { RoleModule } from './role/role.module';
     ThreadModule,
     PostModule,
     RoleModule,
+    HealthModule,
   ],
   controllers: [],
   providers: [],
