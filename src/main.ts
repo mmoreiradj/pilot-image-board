@@ -5,8 +5,6 @@ import {
   FastifyAdapter,
   NestFastifyApplication,
 } from '@nestjs/platform-fastify';
-import fastifyCookie from '@fastify/cookie';
-import fastifyCsrf from '@fastify/csrf-protection';
 
 async function bootstrap() {
   const CORS_OPTIONS = {
@@ -24,19 +22,15 @@ async function bootstrap() {
   };
 
   const adapter = new FastifyAdapter();
+
   adapter.enableCors(CORS_OPTIONS);
+
   const app = await NestFactory.create<NestFastifyApplication>(
     AppModule,
     adapter,
   );
 
-  await app.register(fastifyCookie, {
-    secret: 'super-secret',
-  });
-
-  await app.register(fastifyCsrf);
-
-  app.useGlobalPipes(
+  await app.useGlobalPipes(
     new ValidationPipe({
       whitelist: true,
       transform: true,
