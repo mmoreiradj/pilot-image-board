@@ -1,5 +1,5 @@
 import {
-  Body,
+  Body, CacheInterceptor,
   Controller,
   Delete,
   Get,
@@ -9,8 +9,8 @@ import {
   ParseIntPipe,
   Patch,
   Query,
-  UseGuards,
-} from '@nestjs/common';
+  UseGuards, UseInterceptors
+} from "@nestjs/common";
 import { UserService } from './user.service';
 import { SearchUserDto, UpdateUserDto } from './dto';
 import { GetUser } from '../auth/decorator';
@@ -21,6 +21,7 @@ import { AdminGuard, JwtGuard } from '../auth/guard';
 export class UserController {
   constructor(private readonly userService: UserService) {}
 
+  @UseInterceptors(CacheInterceptor)
   @Get()
   findAll(@Query() search: SearchUserDto) {
     return this.userService.findAll(search);
@@ -32,6 +33,7 @@ export class UserController {
     return this.findOne(user.sub);
   }
 
+  @UseInterceptors(CacheInterceptor)
   @Get(':id')
   findOne(@Param('id', ParseIntPipe) id: number) {
     return this.userService.findOne(id);

@@ -1,4 +1,4 @@
-import { Module } from '@nestjs/common';
+import { CacheInterceptor, CacheModule, Module } from "@nestjs/common";
 import { AuthModule } from './auth/auth.module';
 import { PrismaModule } from './prisma/prisma.module';
 import { ConfigModule } from '@nestjs/config';
@@ -9,9 +9,15 @@ import { ThreadModule } from './thread/thread.module';
 import { PostModule } from './post/post.module';
 import { RoleModule } from './role/role.module';
 import { HealthModule } from './health/health.module';
+import { ThrottlerModule } from '@nestjs/throttler';
+import { APP_INTERCEPTOR } from '@nestjs/core';
 
 @Module({
   imports: [
+    ThrottlerModule.forRoot({
+      ttl: 60,
+      limit: 100,
+    }),
     AuthModule,
     PrismaModule,
     ConfigModule.forRoot({
@@ -24,8 +30,16 @@ import { HealthModule } from './health/health.module';
     PostModule,
     RoleModule,
     HealthModule,
+    CacheModule.register({
+      isGlobal: true,
+    }),
   ],
   controllers: [],
-  providers: [],
+  providers: [
+    {
+      provide: APP_INTERCEPTOR,
+      useClass: CacheInterceptor,
+    },
+  ],
 })
 export class AppModule {}

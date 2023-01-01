@@ -1,5 +1,5 @@
 import {
-  Body,
+  Body, CacheInterceptor,
   Controller,
   Delete,
   Get,
@@ -10,8 +10,8 @@ import {
   Patch,
   Post,
   Query,
-  UseGuards,
-} from '@nestjs/common';
+  UseGuards, UseInterceptors
+} from "@nestjs/common";
 import { BoardService } from './board.service';
 import { AdminGuard, JwtGuard } from '../auth/guard';
 import { CreateBoardDto, SearchBoardDto, UpdateBoardDto } from './dto';
@@ -26,11 +26,13 @@ export class BoardController {
     return this.boardService.create(dto);
   }
 
+  @UseInterceptors(CacheInterceptor)
   @Get()
   findAll(@Query() dto: SearchBoardDto) {
     return this.boardService.findAll(dto);
   }
 
+  @UseInterceptors(CacheInterceptor)
   @Get(':id')
   findOne(@Param('id', ParseIntPipe) id: number) {
     return this.boardService.findOne(id);

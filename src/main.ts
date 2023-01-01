@@ -5,6 +5,7 @@ import {
   FastifyAdapter,
   NestFastifyApplication,
 } from '@nestjs/platform-fastify';
+import helmet from '@fastify/helmet';
 
 async function bootstrap() {
   const CORS_OPTIONS = {
@@ -29,6 +30,8 @@ async function bootstrap() {
     AppModule,
     adapter,
   );
+
+  await app.register(helmet);
 
   await app.useGlobalPipes(
     new ValidationPipe({

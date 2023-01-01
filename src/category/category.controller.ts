@@ -1,5 +1,5 @@
 import {
-  Body,
+  Body, CacheInterceptor,
   Controller,
   Delete,
   Get,
@@ -10,8 +10,8 @@ import {
   Patch,
   Post,
   Query,
-  UseGuards,
-} from '@nestjs/common';
+  UseGuards, UseInterceptors
+} from "@nestjs/common";
 import { CategoryService } from './category.service';
 import { AdminGuard, JwtGuard } from '../auth/guard';
 import { SearchCategoryDto, UpdateCategoryDto, CreateCategoryDto } from './dto';
@@ -26,11 +26,13 @@ export class CategoryController {
     return this.categoryService.create(createCategoryDto);
   }
 
+  @UseInterceptors(CacheInterceptor)
   @Get()
   findAll(@Query() dto: SearchCategoryDto) {
     return this.categoryService.findAll(dto);
   }
 
+  @UseInterceptors(CacheInterceptor)
   @Get(':category_id')
   findOne(@Param('category_id', ParseIntPipe) id: number) {
     return this.categoryService.findOne(+id);
