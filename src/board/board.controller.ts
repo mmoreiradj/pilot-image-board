@@ -1,5 +1,6 @@
 import {
-  Body, CacheInterceptor,
+  Body,
+  CacheInterceptor,
   Controller,
   Delete,
   Get,
@@ -10,16 +11,23 @@ import {
   Patch,
   Post,
   Query,
-  UseGuards, UseInterceptors
-} from "@nestjs/common";
+  UseGuards,
+  UseInterceptors,
+} from '@nestjs/common';
 import { BoardService } from './board.service';
 import { AdminGuard, JwtGuard } from '../auth/guard';
 import { CreateBoardDto, SearchBoardDto, UpdateBoardDto } from './dto';
+import { ApiBadRequestResponse, ApiTags } from '@nestjs/swagger';
 
+@ApiTags('boards')
 @Controller('boards')
 export class BoardController {
   constructor(private readonly boardService: BoardService) {}
 
+  @ApiBadRequestResponse({
+    description:
+      'Parameter validation failed or board with specified title already exists',
+  })
   @UseGuards(JwtGuard, AdminGuard)
   @Post()
   create(@Body() dto: CreateBoardDto) {

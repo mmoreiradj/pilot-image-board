@@ -1,5 +1,6 @@
 import {
-  Body, CacheInterceptor,
+  Body,
+  CacheInterceptor,
   Controller,
   Delete,
   Get,
@@ -10,16 +11,22 @@ import {
   Patch,
   Post,
   Query,
-  UseGuards, UseInterceptors
-} from "@nestjs/common";
+  UseGuards,
+  UseInterceptors,
+} from '@nestjs/common';
 import { CategoryService } from './category.service';
 import { AdminGuard, JwtGuard } from '../auth/guard';
 import { SearchCategoryDto, UpdateCategoryDto, CreateCategoryDto } from './dto';
+import { ApiBadRequestResponse, ApiTags } from '@nestjs/swagger';
 
+@ApiTags('categories')
 @Controller('categories')
 export class CategoryController {
   constructor(private readonly categoryService: CategoryService) {}
 
+  @ApiBadRequestResponse({
+    description: 'Category name is not unique or parameter validation failed',
+  })
   @UseGuards(JwtGuard, AdminGuard)
   @Post()
   create(@Body() createCategoryDto: CreateCategoryDto) {

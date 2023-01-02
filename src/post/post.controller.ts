@@ -17,13 +17,17 @@ import { JwtGuard } from '../auth/guard';
 import { GetUser } from '../auth/decorator';
 import { User } from '@prisma/client';
 import { CreatePostDto, SearchPostDto, UpdatePostDto } from './dto';
-import { ApiTags } from '@nestjs/swagger';
-import { TargetPost } from './dto/target-post.dto';
+import { ApiBadRequestResponse, ApiTags } from '@nestjs/swagger';
 
+@ApiTags('posts')
 @Controller('posts')
 export class PostController {
   constructor(private readonly postService: PostService) {}
 
+  @ApiBadRequestResponse({
+    description:
+      'Parameter validation failed, threadId not found or posts to answer do not exist on same thread',
+  })
   @UseGuards(JwtGuard)
   @Post()
   async create(@Body() createPostDto: CreatePostDto, @GetUser() user: User) {

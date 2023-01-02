@@ -11,7 +11,9 @@ import {
 import { RoleService } from './role.service';
 import { AdminGuard, JwtGuard } from '../auth/guard';
 import { UserService } from '../user/user.service';
+import { ApiBadRequestResponse, ApiProperty, ApiTags } from '@nestjs/swagger';
 
+@ApiTags('roles')
 @UseGuards(JwtGuard, AdminGuard)
 @Controller()
 export class RoleController {
@@ -20,6 +22,13 @@ export class RoleController {
     private readonly userService: UserService,
   ) {}
 
+  @ApiBadRequestResponse({
+    description: 'Parameter validation failed or user already has role',
+  })
+  @ApiProperty({
+    name: 'roleId',
+    type: Number,
+  })
   @UseGuards(AdminGuard)
   @Post('users/:user_id/roles')
   addRole(

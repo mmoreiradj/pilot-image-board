@@ -1,5 +1,6 @@
 import {
-  Body, CacheInterceptor,
+  Body,
+  CacheInterceptor,
   Controller,
   Delete,
   Get,
@@ -9,14 +10,17 @@ import {
   ParseIntPipe,
   Patch,
   Query,
-  UseGuards, UseInterceptors
-} from "@nestjs/common";
+  UseGuards,
+  UseInterceptors,
+} from '@nestjs/common';
 import { UserService } from './user.service';
 import { SearchUserDto, UpdateUserDto } from './dto';
 import { GetUser } from '../auth/decorator';
 import { User } from '@prisma/client';
 import { AdminGuard, JwtGuard } from '../auth/guard';
+import { ApiTags } from '@nestjs/swagger';
 
+@ApiTags('users')
 @Controller('users')
 export class UserController {
   constructor(private readonly userService: UserService) {}

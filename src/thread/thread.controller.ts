@@ -13,14 +13,19 @@ import {
 } from '@nestjs/common';
 import { ThreadService } from './thread.service';
 import { CreateThreadDto, SearchThreadDto, UpdateThreadDto } from './dto';
-import { AdminGuard, JwtGuard } from "../auth/guard";
+import { JwtGuard } from '../auth/guard';
 import { GetUser } from '../auth/decorator';
 import { User } from '@prisma/client';
+import { ApiBadRequestResponse, ApiTags } from '@nestjs/swagger';
 
+@ApiTags('threads')
 @Controller('threads')
 export class ThreadController {
   constructor(private readonly threadService: ThreadService) {}
 
+  @ApiBadRequestResponse({
+    description: 'Parameter validation failed or boardId not found',
+  })
   @UseGuards(JwtGuard)
   @Post()
   create(@Body() createThreadDto: CreateThreadDto, @GetUser() user: User) {

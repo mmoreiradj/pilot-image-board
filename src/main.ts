@@ -6,6 +6,7 @@ import {
   NestFastifyApplication,
 } from '@nestjs/platform-fastify';
 import helmet from '@fastify/helmet';
+import { DocumentBuilder, SwaggerModule } from "@nestjs/swagger";
 
 async function bootstrap() {
   const CORS_OPTIONS = {
@@ -31,7 +32,29 @@ async function bootstrap() {
     adapter,
   );
 
-  await app.register(helmet);
+  app.setGlobalPrefix('v1');
+
+  const swaggerConfig = new DocumentBuilder()
+    .setTitle('Pilot API')
+    .setDescription('An image board API')
+    .setVersion('1.0')
+    .addTag('pilot')
+    .build();
+
+  const document = SwaggerModule.createDocument(app, swaggerConfig);
+  SwaggerModule.setup('api', app, document);
+
+  await app.register(helmet, {
+    crossOriginEmbedderPolicy: false,
+    // contentSecurityPolicy: {
+    //   directives: {
+    //     defaultSrc: [`'self'`],
+    //     styleSrc: [`'self'`, `'unsafe-inline'`],
+    //     imgSrc: [`'self'`, 'data:', 'validator.swagger.io'],
+    //     scriptSrc: [`'self'`, `https: 'unsafe-inline'`],
+    //   },
+    // },
+  });
 
   await app.useGlobalPipes(
     new ValidationPipe({
