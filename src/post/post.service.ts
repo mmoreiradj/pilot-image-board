@@ -6,27 +6,94 @@ import {
 import { CreatePostDto, SearchPostDto, UpdatePostDto } from './dto';
 import { PrismaService } from '../prisma/prisma.service';
 import { PrismaClientKnownRequestError } from '@prisma/client/runtime';
+import { TargetPost } from './dto/target-post.dto';
+import { PilotError } from '../pilot.error';
+import { Post } from '@prisma/client';
 
 @Injectable()
 export class PostService {
   constructor(private readonly prisma: PrismaService) {}
 
-  create(createPostDto: CreatePostDto, userId: any) {
+  async create(createPostDto: CreatePostDto, userId: any) {
     try {
-      return this.prisma.post.create({
+      if (
+        createPostDto?.targetPostIds &&
+        createPostDto.targetPostIds.length > 0
+      ) {
+        await this.checkPostsSourceExists(createPostDto);
+      }
+      const post = await this.prisma.post.create({
         data: {
-          ...createPostDto,
+          description: createPostDto.description,
+          threadId: createPostDto.threadId,
+          image: createPostDto.image,
           creatorId: userId,
         },
       });
+      if (
+        createPostDto?.targetPostIds &&
+        createPostDto.targetPostIds.length > 0
+      ) {
+        await this.addPostAnswers(post, createPostDto.targetPostIds);
+      }
+      return post;
     } catch (error: any | PrismaClientKnownRequestError) {
       if (
         error instanceof PrismaClientKnownRequestError &&
         error.code === 'P2003'
       ) {
-        throw new BadRequestException("Thread doesn't exist");
+        throw new BadRequestException({
+          error: {
+            field: 'threadId',
+            code: PilotError.FIELD_FOREIGN_KEY,
+          },
+        });
       }
       throw error;
+    }
+  }
+
+  async checkPostsSourceExists(createPostDto: CreatePostDto) {
+    const targets = await this.prisma.post.findMany({
+      where: {
+        id: {
+          in: createPostDto.targetPostIds.map((target) => target.targetPostId),
+        },
+        threadId: createPostDto.threadId,
+      },
+    });
+    if (targets.length !== createPostDto.targetPostIds.length) {
+      createPostDto.targetPostIds.forEach((targetPost) => {
+        if (!targets.some((target) => target.id === targetPost.targetPostId)) {
+          throw new BadRequestException({
+            error: PilotError.FIELD_FOREIGN_KEY,
+            message: `Post with id ${targetPost.targetPostId} does not exist`,
+          });
+        }
+      });
+    }
+
+    return true;
+  }
+
+  async addPostAnswers(post: Post, targetPosts: TargetPost[]) {
+    try {
+      const promises = [];
+
+      for (const targetPost of targetPosts) {
+        promises.push(
+          this.prisma.post_answer.create({
+            data: {
+              sourcePostId: post.id,
+              targetPostId: targetPost.targetPostId,
+            },
+          }),
+        );
+      }
+
+      return await Promise.all(promises);
+    } catch (error: any) {
+      console.log(error);
     }
   }
 
@@ -111,5 +178,35 @@ export class PostService {
       }
       throw error;
     }
+  }
+
+  findAllAnswers(postId: number) {
+    return this.prisma.post.findMany({
+      where: {
+        id: {
+          notIn: [postId],
+        },
+        answers: {
+          every: {
+            targetPostId: postId,
+          },
+        },
+      },
+    });
+  }
+
+  findAllAnswering(postId: number) {
+    return this.prisma.post.findMany({
+      where: {
+        id: {
+          notIn: [postId],
+        },
+        answers: {
+          every: {
+            sourcePostId: postId,
+          },
+        },
+      },
+    });
   }
 }

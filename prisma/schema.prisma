@@ -11,14 +11,14 @@ datasource db {
 }
 
 model User {
-  id        Int      @id @default(autoincrement())
-  createdAt DateTime @default(now())
-  updatedAt DateTime @default(now()) @updatedAt
+  id        Int      @id @default(autoincrement()) @map("user_id")
+  createdAt DateTime @default(now()) @map("user_created_at")
+  updatedAt DateTime @default(now()) @updatedAt @map("user_updated_at")
 
-  username String @unique
-  hash     String
+  username String @unique @map("user_username")
+  hash     String @map("user_hash")
 
-  description String?
+  description String? @map("user_description")
 
   posts   Post[]
   threads Thread[]
@@ -28,10 +28,10 @@ model User {
 }
 
 model User_role {
-  userId Int
+  userId Int @map("user_id")
   user   User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
-  roleId Int
+  roleId Int @map("role_id")
   role   Role @relation(fields: [roleId], references: [id], onDelete: Cascade)
 
   @@id([userId, roleId])
@@ -40,14 +40,14 @@ model User_role {
 }
 
 model Board {
-  id        Int      @id @default(autoincrement())
-  createdAt DateTime @default(now())
-  updatedAt DateTime @default(now()) @updatedAt
+  id        Int      @id @default(autoincrement()) @map("board_id")
+  createdAt DateTime @default(now()) @map("board_created_at")
+  updatedAt DateTime @default(now()) @updatedAt @map("board_updated_at")
 
-  title       String  @unique
-  description String?
+  title       String  @unique @map("board_title")
+  description String? @map("board_description")
 
-  categoryId Int
+  categoryId Int  @map("categoryId")
   category   Category @relation(fields: [categoryId], references: [id], onDelete: Cascade)
 
   threads Thread[]
@@ -56,30 +56,30 @@ model Board {
 }
 
 model Category {
-  id        Int      @id @default(autoincrement())
-  createdAt DateTime @default(now())
-  updatedAt DateTime @default(now()) @updatedAt
+  id        Int      @id @default(autoincrement()) @map("category_id")
+  createdAt DateTime @default(now()) @map("category_created_at")
+  updatedAt DateTime @default(now()) @updatedAt @map("category_updated_at")
 
-  name        String  @unique
-  description String
+  name        String  @unique @map("category_name")
+  description String @map("category_description")
   boards      Board[]
 
   @@map("category")
 }
 
 model Thread {
-  id        Int      @id @default(autoincrement())
-  createdAt DateTime @default(now())
-  updatedAt DateTime @default(now()) @updatedAt
+  id        Int      @id @default(autoincrement()) @map("thread_id")
+  createdAt DateTime @default(now()) @map("thread_created_at")
+  updatedAt DateTime @default(now()) @updatedAt @map("thread_updated_at")
 
-  title       String
-  description String
-  image       String @default("")
+  title       String @map("thread_title")
+  description String @map("thread_description")
+  image       String @default("") @map("thread_image")
 
-  boardId Int
+  boardId Int @map("board_id")
   board   Board @relation(fields: [boardId], references: [id], onDelete: Cascade)
 
-  creatorId Int
+  creatorId Int @map("creator_id")
   user      User   @relation(fields: [creatorId], references: [id], onDelete: Cascade)
   posts     Post[]
 
@@ -87,26 +87,40 @@ model Thread {
 }
 
 model Post {
-  id        Int      @id @default(autoincrement())
-  createdAt DateTime @default(now())
-  updatedAt DateTime @default(now()) @updatedAt
+  id        Int      @id @default(autoincrement()) @map("post_id")
+  createdAt DateTime @default(now()) @map("post_created_at")
+  updatedAt DateTime @default(now()) @updatedAt @map("post_updated_at")
 
-  description String
-  image       String @default("")
+  description String @map("post_description")
+  image       String @default("") @map("post_image")
 
-  creatorId Int
+  creatorId Int @map("creator_id")
   user      User @relation(fields: [creatorId], references: [id], onDelete: Cascade)
 
-  threadId Int
+  threadId Int @map("thread_id")
   thread   Thread @relation(fields: [threadId], references: [id], onDelete: Cascade)
+
+  answers post_answer[] @relation("source")
+  answersTo post_answer[] @relation("target")
 
   @@map("post")
 }
 
-model Role {
-  id Int @id @default(autoincrement())
+model post_answer {
+  sourcePostId Int @map("post_id_source")
+  sourcePost Post @relation("source", fields: [sourcePostId], references: [id], onDelete: Cascade)
 
-  name  String      @unique
+  targetPostId Int @map("post_id_target")
+  targetPost Post @relation("target", fields: [targetPostId], references: [id], onDelete: Cascade)
+
+  @@id([sourcePostId, targetPostId])
+  @@map("post_answer")
+}
+
+model Role {
+  id Int @id @default(autoincrement()) @map("role_id")
+
+  name  String      @unique @map("role_name")
   users User_role[]
 
   @@map("role")

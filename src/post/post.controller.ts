@@ -5,6 +5,7 @@ import {
   ForbiddenException,
   Get,
   Param,
+  ParseArrayPipe,
   ParseIntPipe,
   Patch,
   Post,
@@ -16,6 +17,8 @@ import { JwtGuard } from '../auth/guard';
 import { GetUser } from '../auth/decorator';
 import { User } from '@prisma/client';
 import { CreatePostDto, SearchPostDto, UpdatePostDto } from './dto';
+import { ApiTags } from '@nestjs/swagger';
+import { TargetPost } from './dto/target-post.dto';
 
 @Controller('posts')
 export class PostController {
@@ -30,6 +33,16 @@ export class PostController {
   @Get()
   async findAll(@Query() searchPostDto: SearchPostDto) {
     return this.postService.findAll(searchPostDto);
+  }
+
+  @Get(':post_id/answers')
+  async findAllAnswers(@Param('post_id', ParseIntPipe) postId: number) {
+    return this.postService.findAllAnswers(postId);
+  }
+
+  @Get(':post_id/answers-to')
+  async findAllAnswering(@Param('post_id', ParseIntPipe) postId: number) {
+    return this.postService.findAllAnswering(postId);
   }
 
   @Get(':post_id')
