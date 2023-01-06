@@ -1,6 +1,5 @@
 import {
   Body,
-  CacheInterceptor,
   Controller,
   Delete,
   Get,
@@ -33,13 +32,11 @@ export class CategoryController {
     return this.categoryService.create(createCategoryDto);
   }
 
-  @UseInterceptors(CacheInterceptor)
   @Get()
   findAll(@Query() dto: SearchCategoryDto) {
     return this.categoryService.findAll(dto);
   }
 
-  @UseInterceptors(CacheInterceptor)
   @Get(':category_id')
   findOne(@Param('category_id', ParseIntPipe) id: number) {
     return this.categoryService.findOne(+id);

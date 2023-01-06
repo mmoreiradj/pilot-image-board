@@ -1,6 +1,5 @@
 import {
   Body,
-  CacheInterceptor,
   Controller,
   Delete,
   Get,
@@ -34,13 +33,11 @@ export class BoardController {
     return this.boardService.create(dto);
   }
 
-  @UseInterceptors(CacheInterceptor)
   @Get()
   findAll(@Query() dto: SearchBoardDto) {
     return this.boardService.findAll(dto);
   }
 
-  @UseInterceptors(CacheInterceptor)
   @Get(':id')
   findOne(@Param('id', ParseIntPipe) id: number) {
     return this.boardService.findOne(id);
