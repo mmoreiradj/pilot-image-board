@@ -10,6 +10,7 @@ import { PostModule } from './post/post.module';
 import { RoleModule } from './role/role.module';
 import { HealthModule } from './health/health.module';
 import { ThrottlerModule } from '@nestjs/throttler';
+import { config } from './common/config/app.config';
 
 @Module({
   imports: [
@@ -24,6 +25,7 @@ import { ThrottlerModule } from '@nestjs/throttler';
     PrismaModule,
     ConfigModule.forRoot({
       isGlobal: true,
+      validate: config,
     }),
     UserModule,
     BoardModule,

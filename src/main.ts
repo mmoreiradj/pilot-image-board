@@ -5,11 +5,19 @@ import {
   FastifyAdapter,
   NestFastifyApplication,
 } from '@nestjs/platform-fastify';
-import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
+import { AppConfigService } from './common/config/app-config.service';
 
 async function bootstrap() {
+  const adapter = new FastifyAdapter();
+  const app = await NestFactory.create<NestFastifyApplication>(
+    AppModule,
+    adapter,
+  );
+
+  const config = app.get<AppConfigService>(AppConfigService);
+
   const CORS_OPTIONS = {
-    origin: process.env.CORS_ORIGIN,
+    origin: config.corsOrigin,
     allowedHeaders: [
       'Access-Control-Allow-Origin',
       'Access-Control-Allow-Methods',
@@ -23,49 +31,17 @@ async function bootstrap() {
     methods: ['GET', 'PUT', 'OPTIONS', 'POST', 'DELETE', 'PATCH'],
   };
 
-  const adapter = new FastifyAdapter();
-
-  if (process.env.NODE_ENV === 'production') {
-    adapter.enableCors(CORS_OPTIONS);
-  }
-
-  const app = await NestFactory.create<NestFastifyApplication>(
-    AppModule,
-    adapter,
-  );
+  app.enableCors(CORS_OPTIONS);
 
   app.setGlobalPrefix('v1');
-  if (process.env.NODE_ENV !== 'production') {
-    const swaggerConfig = new DocumentBuilder()
-      .setTitle('Pilot API')
-      .setDescription('An image board API')
-      .setVersion('1.0')
-      .addTag('pilot')
-      .build();
 
-    const document = SwaggerModule.createDocument(app, swaggerConfig);
-    SwaggerModule.setup('api', app, document);
-  }
-
-  if (process.env.NODE_ENV === 'production') {
-    // await app.register(helmet, {
-    //   contentSecurityPolicy: {
-    //     directives: {
-    //       defaultSrc: [`'self'`],
-    //       styleSrc: [`'self'`, `'unsafe-inline'`],
-    //       imgSrc: [`'self'`, 'data:', 'validator.swagger.io'],
-    //       scriptSrc: [`'self'`, `https: 'unsafe-inline'`],
-    //     },
-    //   },
-    // });
-  }
-
-  await app.useGlobalPipes(
+  app.useGlobalPipes(
     new ValidationPipe({
       whitelist: true,
       transform: true,
     }),
   );
-  await app.listen(process.env.PORT || 3000, '0.0.0.0');
+  await app.listen(config.port, '0.0.0.0');
 }
+
 bootstrap();
