@@ -29,9 +29,13 @@ RUN pnpm prune --prod
 ###################
 FROM node:${NODE_VERSION}-alpine
 
+RUN apk add --no-cache tini
+
 WORKDIR /usr/src/app
 
-COPY --from=build /usr/src/app/node_modules ./node_modules
-COPY --from=build /usr/src/app/dist ./dist
+COPY --from=build --chown=node:node /usr/src/app/node_modules ./node_modules
+COPY --from=build --chown=node:node /usr/src/app/dist ./dist
 
-CMD ["node", "dist/main.js" ]
+USER node
+
+CMD [ "/sbin/tini", "node", "dist/main.js" ]
