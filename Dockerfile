@@ -1,46 +1,35 @@
-FROM node:16 AS development
+ARG NODE_VERSION=20
+
+###################
+# BUILD
+###################
+FROM node:${NODE_VERSION}-alpine AS build
 
 WORKDIR /usr/src/app
 
-COPY package*.json ./
+ENV PNPM_HOME="/pnpm"
+ENV PATH="$PNPM_HOME:$PATH"
+RUN corepack enable
 
-RUN npm install
+COPY package.json pnpm-lock.yaml ./
+
+RUN --mount=type=cache,id=pnpm,target=/pnpm/store \
+    pnpm install --frozen-lockfile
 
 COPY . .
 
-RUN npx prisma generate
+RUN pnpm run generate:prisma
 
-EXPOSE 3000
+RUN pnpm run build
 
-CMD [ "npm", "run", "start:dev" ]
-
-###################
-# BUILD FOR PRODUCTION
-###################
-
-FROM node:16 AS build
-
-WORKDIR /usr/src/app
-
-COPY package*.json ./
-
-COPY --from=development /usr/src/app/node_modules ./node_modules
-
-COPY . .
-
-WORKDIR /usr/src/app
-
-RUN npm run build
-
-ENV NODE_ENV production
-
-RUN npm ci --only=production && npm cache clean --force
+RUN pnpm prune --prod
 
 ###################
 # PRODUCTION
 ###################
+FROM node:${NODE_VERSION}-alpine
 
-FROM node:16 AS production
+WORKDIR /usr/src/app
 
 COPY --from=build /usr/src/app/node_modules ./node_modules
 COPY --from=build /usr/src/app/dist ./dist
