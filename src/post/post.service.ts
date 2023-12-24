@@ -5,7 +5,7 @@ import {
 } from '@nestjs/common';
 import { CreatePostDto, SearchPostDto, UpdatePostDto } from './dto';
 import { PrismaService } from '../prisma/prisma.service';
-import { PrismaClientKnownRequestError } from '@prisma/client/runtime';
+import { PrismaClientKnownRequestError } from '@prisma/client/runtime/library';
 import { TargetPost } from './dto/target-post.dto';
 import { PilotError } from '../pilot.error';
 import { Post } from '@prisma/client';

@@ -5,7 +5,7 @@ import {
 } from '@nestjs/common';
 import { CreateBoardDto, SearchBoardDto, UpdateBoardDto } from './dto';
 import { PrismaService } from '../prisma/prisma.service';
-import { PrismaClientKnownRequestError } from '@prisma/client/runtime';
+import { PrismaClientKnownRequestError } from '@prisma/client/runtime/library';
 import { PilotError } from '../pilot.error';
 
 @Injectable()

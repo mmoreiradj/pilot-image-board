@@ -10,14 +10,16 @@ import { PostModule } from './post/post.module';
 import { RoleModule } from './role/role.module';
 import { HealthModule } from './health/health.module';
 import { ThrottlerModule } from '@nestjs/throttler';
-import { APP_INTERCEPTOR } from '@nestjs/core';
 
 @Module({
   imports: [
-    ThrottlerModule.forRoot({
-      ttl: 60,
-      limit: 100,
-    }),
+    ThrottlerModule.forRoot([
+      {
+        name: 'api',
+        limit: 60,
+        ttl: 60,
+      },
+    ]),
     AuthModule,
     PrismaModule,
     ConfigModule.forRoot({
