@@ -1,6 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { Config } from './app.config';
+import { S3ModuleOptions } from 'nestjs-s3';
 
 @Injectable()
 export class AppConfigService {
@@ -30,5 +31,24 @@ export class AppConfigService {
 
   get port(): number {
     return this.configService.getOrThrow<number>('PORT');
+  }
+
+  get s3Config(): S3ModuleOptions {
+    return {
+      config: {
+        credentials: {
+          accessKeyId: this.configService.getOrThrow<string>('S3_ACCESS_KEY'),
+          secretAccessKey:
+            this.configService.getOrThrow<string>('S3_SECRET_KEY'),
+        },
+        region: 'us-east-1', // since we're using minio, this is ignored
+        endpoint: this.configService.getOrThrow<string>('S3_ENDPOINT'),
+        forcePathStyle: true,
+      },
+    };
+  }
+
+  get s3BucketName(): string {
+    return this.configService.getOrThrow<string>('S3_BUCKET_NAME');
   }
 }

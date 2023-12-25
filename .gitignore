@@ -42,3 +42,4 @@ lerna-debug.log*
 
 # Docker volumes
 .postgres-data
+.minio-data

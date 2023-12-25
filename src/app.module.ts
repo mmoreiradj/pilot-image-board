@@ -11,6 +11,7 @@ import { RoleModule } from './role/role.module';
 import { HealthModule } from './health/health.module';
 import { ThrottlerModule } from '@nestjs/throttler';
 import { config } from './common/config/app.config';
+import { ImagesModule } from './images/images.module';
 
 @Module({
   imports: [
@@ -34,6 +35,7 @@ import { config } from './common/config/app.config';
     PostModule,
     RoleModule,
     HealthModule,
+    ImagesModule,
   ],
   controllers: [],
   providers: [],
