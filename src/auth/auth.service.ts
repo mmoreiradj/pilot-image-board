@@ -112,7 +112,9 @@ export class AuthService {
 
   async refresh(refreshToken: string) {
     try {
-      const token = await this.jwt.verifyAsync(refreshToken);
+      const token = await this.jwt.verifyAsync(refreshToken, {
+        secret: this.config.jwtRefreshSecret,
+      });
       const sub = token.id;
 
       if (!token.id || token.exp < Date.now() / 1000) {
@@ -140,7 +142,7 @@ export class AuthService {
         throw new UnauthorizedException('Credentials incorrect');
       }
 
-      Logger.error(error, 'AuthService.refresh');
+      Logger.error(error.stack, 'AuthService.refresh');
 
       throw new InternalServerErrorException();
     }
