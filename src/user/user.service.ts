@@ -49,6 +49,22 @@ export class UserService {
     };
   }
 
+  async findOneByIdWithRefreshToken(id: number) {
+    const user = await this.prisma.user.findFirst({
+      select: {
+        ...this.select,
+        refreshToken: true,
+      },
+      where: {
+        id,
+      },
+    });
+
+    if (!user) throw new NotFoundException('Resource not found');
+
+    return user;
+  }
+
   async findOne(id: number) {
     const user = await this.prisma.user.findFirst({
       select: this.select,

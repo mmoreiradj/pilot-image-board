@@ -1,19 +1,26 @@
-import { Injectable, UnauthorizedException } from '@nestjs/common';
+import {
+  Injectable,
+  InternalServerErrorException,
+  Logger,
+  NotFoundException,
+  UnauthorizedException,
+} from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { SignInDto, SignUpDto } from './dto';
 import * as argon from 'argon2';
 import { PrismaClientKnownRequestError } from '@prisma/client/runtime/library';
-import { JwtService } from '@nestjs/jwt';
-import { ConfigService } from '@nestjs/config';
+import { JwtService, TokenExpiredError } from '@nestjs/jwt';
 import { PilotError } from '../pilot.error';
-import { readFileSync } from 'fs';
+import { AppConfigService } from 'src/common/config/app-config.service';
+import { UserService } from 'src/user/user.service';
 
 @Injectable()
 export class AuthService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly jwt: JwtService,
-    private readonly config: ConfigService,
+    private readonly config: AppConfigService,
+    private readonly userService: UserService,
   ) {}
 
   private readonly select = {
@@ -23,6 +30,35 @@ export class AuthService {
     updatedAt: true,
     description: true,
   };
+
+  private async generateTokens(
+    userId: number,
+    username: string,
+  ): Promise<{
+    access_token: string;
+    refresh_token: string;
+  }> {
+    const [access, refresh] = await Promise.all([
+      this.signToken(userId, username, '10m'),
+      this.signToken(userId, username, '1m'),
+    ]);
+
+    const hashedRefreshToken = await argon.hash(refresh);
+
+    await this.prisma.user.update({
+      where: {
+        id: userId,
+      },
+      data: {
+        refreshToken: hashedRefreshToken,
+      },
+    });
+
+    return {
+      access_token: access,
+      refresh_token: refresh,
+    };
+  }
 
   async signUp(dto: SignUpDto) {
     const hash = await argon.hash(dto.password);
@@ -75,58 +111,51 @@ export class AuthService {
       throw new UnauthorizedException('Credentials incorrect');
     }
 
-    return this.signToken(
-      user.id,
-      user.username,
-      user.roles.map((r) => r.role.name),
-    );
+    return this.generateTokens(user.id, user.username);
   }
 
   async signToken(
     userId: number,
     username: string,
+    expiresIn: string,
     roles: string[] = [],
-  ): Promise<{ access_token: string; refresh_token: string }> {
+  ): Promise<string> {
     const payload = { id: userId, username, roles };
 
-    const accessToken = await this.jwt.signAsync(payload, {
-      expiresIn: this.config.get('JWT_EXPIRES_IN'),
-      secret: readFileSync(this.config.get('JWT_SECRET_PATH')),
+    return await this.jwt.signAsync(payload, {
+      expiresIn: expiresIn,
+      secret: this.config.jwtSecret,
     });
-
-    const refreshToken = await this.jwt.signAsync(payload, {
-      expiresIn: this.config.get('JWT_REFRESH_EXPIRES_IN'),
-      secret: readFileSync(this.config.get('JWT_REFRESH_SECRET_PATH')),
-    });
-
-    return {
-      access_token: accessToken,
-      refresh_token: refreshToken,
-    };
   }
 
-  async refresh(payload: any) {
-    const user = await this.prisma.user.findUnique({
-      include: {
-        roles: {
-          select: {
-            role: true,
-          },
-        },
-      },
-      where: {
-        id: payload.id,
-      },
-    });
+  async refresh(refreshToken: string) {
+    try {
+      const token = await this.jwt.verifyAsync(refreshToken);
+      const sub = (await this.jwt.verifyAsync(refreshToken))?.id;
 
-    if (!user) {
-      throw new UnauthorizedException('Credentials incorrect');
+      if (!token.id || token.exp < Date.now() / 1000) {
+        throw new UnauthorizedException('Credentials incorrect');
+      }
+
+      const user = await this.userService.findOneByIdWithRefreshToken(sub);
+
+      if (!(await argon.verify(user.refreshToken, refreshToken))) {
+        throw new UnauthorizedException('Credentials incorrect');
+      }
+
+      return this.generateTokens(user.id, user.username);
+    } catch (error) {
+      if (
+        error instanceof UnauthorizedException ||
+        error instanceof NotFoundException ||
+        error instanceof TokenExpiredError
+      ) {
+        throw new UnauthorizedException('Credentials incorrect');
+      }
+
+      Logger.error(error, 'AuthService.refresh');
+
+      throw new InternalServerErrorException();
     }
-
-    return this.signToken(
-      user.id,
-      user.username,
-      user.roles.map((r) => r.role.name),
-    );
   }
 }

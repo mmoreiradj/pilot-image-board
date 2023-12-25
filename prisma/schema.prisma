@@ -24,6 +24,8 @@ model User {
   threads Thread[]
   roles   User_role[]
 
+  refreshToken String? @map("refresh_token")
+
   @@map("user")
 }
 

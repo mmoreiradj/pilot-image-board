@@ -1,15 +1,13 @@
 import {
+  BadRequestException,
   Body,
   Controller,
   HttpCode,
   HttpStatus,
   Post,
-  UseGuards,
 } from '@nestjs/common';
 import { AuthService } from './auth.service';
 import { SignInDto, SignUpDto } from './dto';
-import { JwtRefreshGuard } from './guard';
-import { GetUser } from './decorator';
 import { ApiResponse, ApiTags } from '@nestjs/swagger';
 
 @ApiTags('auth')
@@ -39,10 +37,13 @@ export class AuthController {
     description: 'The token is invalid',
   })
   @HttpCode(HttpStatus.OK)
-  @UseGuards(JwtRefreshGuard)
   @Post('refresh')
-  refresh(@GetUser() user) {
-    return this.authService.refresh(user);
+  refresh(@Body('refresh_token') refreshToken: string) {
+    if (!refreshToken) {
+      throw new BadRequestException('Refresh token is required');
+    }
+
+    return this.authService.refresh(refreshToken);
   }
 
   @ApiResponse({
