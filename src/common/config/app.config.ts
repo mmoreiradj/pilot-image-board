@@ -10,8 +10,6 @@ export const configSchema = z.object({
   PG_PASSWORD: z.string(),
   PG_DATABASE: z.string(),
 
-  JWT_SECRET: z.string(),
-
   CORS_ORIGIN: z.string().url(),
 });
 

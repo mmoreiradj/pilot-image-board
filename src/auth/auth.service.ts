@@ -5,10 +5,8 @@ import {
   NotFoundException,
   UnauthorizedException,
 } from '@nestjs/common';
-import { PrismaService } from '../prisma/prisma.service';
 import { SignInDto, SignUpDto } from './dto';
 import * as argon from 'argon2';
-import { PrismaClientKnownRequestError } from '@prisma/client/runtime/library';
 import { JwtService, TokenExpiredError } from '@nestjs/jwt';
 import { PilotError } from '../pilot.error';
 import { AppConfigService } from 'src/common/config/app-config.service';
@@ -17,7 +15,6 @@ import { UserService } from 'src/user/user.service';
 @Injectable()
 export class AuthService {
   constructor(
-    private readonly prisma: PrismaService,
     private readonly jwt: JwtService,
     private readonly config: AppConfigService,
     private readonly userService: UserService,
@@ -34,25 +31,19 @@ export class AuthService {
   private async generateTokens(
     userId: number,
     username: string,
+    userRoles: string[] = [],
   ): Promise<{
     access_token: string;
     refresh_token: string;
   }> {
     const [access, refresh] = await Promise.all([
-      this.signToken(userId, username, '10m'),
-      this.signToken(userId, username, '1m'),
+      this.signToken(userId, username, '10m', 'access', userRoles),
+      this.signToken(userId, username, '30d', 'refresh', userRoles),
     ]);
 
     const hashedRefreshToken = await argon.hash(refresh);
 
-    await this.prisma.user.update({
-      where: {
-        id: userId,
-      },
-      data: {
-        refreshToken: hashedRefreshToken,
-      },
-    });
+    await this.userService.updateRefreshToken(userId, hashedRefreshToken);
 
     return {
       access_token: access,
@@ -63,43 +54,26 @@ export class AuthService {
   async signUp(dto: SignUpDto) {
     const hash = await argon.hash(dto.password);
 
-    try {
-      return await this.prisma.user.create({
-        select: this.select,
-        data: {
-          username: dto.username,
-          hash,
+    const user = await this.userService.findOneByUsernameWithRoles(
+      dto.username,
+    );
+
+    if (user) {
+      throw new UnauthorizedException({
+        error: {
+          code: PilotError.FIELD_UNIQUE,
+          field: 'username',
         },
       });
-    } catch (error) {
-      if (
-        error instanceof PrismaClientKnownRequestError &&
-        error.code === 'P2002'
-      ) {
-        throw new UnauthorizedException({
-          error: {
-            code: PilotError.FIELD_UNIQUE,
-            field: 'username',
-          },
-        });
-      }
-      throw error;
     }
+
+    return await this.userService.create(dto.username, hash);
   }
 
   async signIn(dto: SignInDto) {
-    const user = await this.prisma.user.findFirst({
-      include: {
-        roles: {
-          select: {
-            role: true,
-          },
-        },
-      },
-      where: {
-        username: dto.username,
-      },
-    });
+    const user = await this.userService.findOneByUsernameWithRoles(
+      dto.username,
+    );
 
     if (!user) {
       throw new UnauthorizedException('Credentials incorrect');
@@ -111,39 +85,52 @@ export class AuthService {
       throw new UnauthorizedException('Credentials incorrect');
     }
 
-    return this.generateTokens(user.id, user.username);
+    return this.generateTokens(
+      user.id,
+      user.username,
+      user.roles.map((r) => r.role.name),
+    );
   }
 
   async signToken(
     userId: number,
     username: string,
     expiresIn: string,
+    type: 'access' | 'refresh',
     roles: string[] = [],
   ): Promise<string> {
     const payload = { id: userId, username, roles };
 
     return await this.jwt.signAsync(payload, {
       expiresIn: expiresIn,
-      secret: this.config.jwtSecret,
+      secret:
+        type === 'access'
+          ? this.config.jwtAccessSecret
+          : this.config.jwtRefreshSecret,
     });
   }
 
   async refresh(refreshToken: string) {
     try {
       const token = await this.jwt.verifyAsync(refreshToken);
-      const sub = (await this.jwt.verifyAsync(refreshToken))?.id;
+      const sub = token.id;
 
       if (!token.id || token.exp < Date.now() / 1000) {
         throw new UnauthorizedException('Credentials incorrect');
       }
 
-      const user = await this.userService.findOneByIdWithRefreshToken(sub);
+      const user =
+        await this.userService.findOneByIdWithRefreshTokenAndRoles(sub);
 
       if (!(await argon.verify(user.refreshToken, refreshToken))) {
         throw new UnauthorizedException('Credentials incorrect');
       }
 
-      return this.generateTokens(user.id, user.username);
+      return this.generateTokens(
+        user.id,
+        user.username,
+        user.roles.map((r) => r.role.name),
+      );
     } catch (error) {
       if (
         error instanceof UnauthorizedException ||

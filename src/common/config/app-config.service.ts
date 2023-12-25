@@ -16,8 +16,12 @@ export class AppConfigService {
     return `postgresql://${user}:${password}@${host}:${port}/${database}`;
   }
 
-  get jwtSecret(): string {
-    return this.configService.getOrThrow<string>('JWT_SECRET');
+  get jwtAccessSecret(): string {
+    return this.configService.getOrThrow<string>('JWT_ACCESS_SECRET');
+  }
+
+  get jwtRefreshSecret(): string {
+    return this.configService.getOrThrow<string>('JWT_REFRESH_SECRET');
   }
 
   get corsOrigin(): string {

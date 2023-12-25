@@ -16,6 +16,27 @@ export class UserService {
     updatedAt: true,
   };
 
+  async create(username: string, hash: string) {
+    return await this.prisma.user.create({
+      select: this.select,
+      data: {
+        username,
+        hash,
+      },
+    });
+  }
+
+  async updateRefreshToken(id: number, refreshToken: string) {
+    return this.prisma.user.update({
+      where: {
+        id,
+      },
+      data: {
+        refreshToken,
+      },
+    });
+  }
+
   async findAll(search: SearchUserDto) {
     const orderBy = {
       [search.orderBy]: search.order,
@@ -49,14 +70,17 @@ export class UserService {
     };
   }
 
-  async findOneByIdWithRefreshToken(id: number) {
+  async findOneByIdWithRefreshTokenAndRoles(id: number) {
     const user = await this.prisma.user.findFirst({
-      select: {
-        ...this.select,
-        refreshToken: true,
-      },
       where: {
         id,
+      },
+      include: {
+        roles: {
+          select: {
+            role: true,
+          },
+        },
       },
     });
 
@@ -76,6 +100,21 @@ export class UserService {
     if (!user) throw new NotFoundException('Resource not found');
 
     return user;
+  }
+
+  async findOneByUsernameWithRoles(username: string) {
+    return this.prisma.user.findFirst({
+      include: {
+        roles: {
+          select: {
+            role: true,
+          },
+        },
+      },
+      where: {
+        username,
+      },
+    });
   }
 
   async update(dto: UpdateUserDto, authUser: User) {

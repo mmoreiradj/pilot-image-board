@@ -10,7 +10,7 @@ import { UserModule } from 'src/user/user.module';
   imports: [
     JwtModule.registerAsync({
       useFactory: (appConfig: AppConfigService) => ({
-        secret: appConfig.jwtSecret,
+        secret: appConfig.jwtAccessSecret,
       }),
       inject: [AppConfigService],
     }),
