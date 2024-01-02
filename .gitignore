@@ -4,3 +4,6 @@
 # Compose volumes
 /.postgres-data
 /.minio-data
+
+# Node modules
+/**/node_modules

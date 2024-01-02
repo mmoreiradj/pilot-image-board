@@ -1,0 +1,15 @@
+{
+  "name": "pilot-back-migrate",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "migrate": "prisma migrate deploy"
+  },
+  "dependencies": {
+    "prisma": "^5.7.1"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC"
+}
