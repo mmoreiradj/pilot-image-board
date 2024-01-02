@@ -6,10 +6,11 @@ import {
   NestFastifyApplication,
 } from '@nestjs/platform-fastify';
 import { AppConfigService } from './common/config/app-config.service';
-import multipart from '@fastify/multipart';
 
 async function bootstrap() {
   const adapter = new FastifyAdapter();
+  adapter.register(require('@fastify/multipart'));
+
   const app = await NestFactory.create<NestFastifyApplication>(
     AppModule,
     adapter,
@@ -33,8 +34,6 @@ async function bootstrap() {
   };
 
   app.enableCors(CORS_OPTIONS);
-
-  app.register(multipart);
 
   app.setGlobalPrefix('v1');
 
