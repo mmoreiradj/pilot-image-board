@@ -16,4 +16,4 @@ RUN --mount=type=cache,id=pnpm,target=/pnpm/store \
     mv prisma/pnpm-lock.yaml ./ && \
     pnpm install --frozen-lockfile
 
-CMD [ "pnpm", "migrate" ]
+CMD [ "/bin/sh", "-c", "DATABASE_URL=postgres://$PG_USER:$PG_PASSWORD@$PG_HOST:$PG_PORT/$PG_DATABASE pnpm migrate" ]
