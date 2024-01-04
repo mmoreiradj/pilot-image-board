@@ -11,3 +11,46 @@ jobs:
     uses: mmoreiradj/pilot-image-board/.github/workflows/build-all-images.yaml@main
     permissions:
       packages: write
+
+  upgrade-chart:
+    name: Upgrade Helm Chart
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    env:
+      APP_VERSION: ${{ github.ref_name }}
+      CI_COMMIT_MESSAGE: "bump(charts): ${{ github.ref_name }} [AUTO]"
+      CI_COMMIT_AUTHOR: Continuous Integration
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          ref: main
+      - name: Upgrade Helm Chart
+        run: |
+          function upgrade_chart() {
+            local chart_file="$1"
+            # remove leading v from tag name
+            local app_version="${APP_VERSION#v}"
+
+            sed -i "s/appVersion: \".*\"/appVersion: \"$app_version\"/" "$chart_file"
+            
+            current_version=$(awk '/version:/ {print $2}' "$chart_file")
+            
+            IFS='.' read -r major minor patch <<< "$current_version"
+            new_minor=$((minor + 1))
+            new_version="$major.$new_minor.$patch"
+            sed -i "0,/version: .*/s/version: .*/version: \"$new_version\"/" "$chart_file"
+          }
+
+          upgrade_chart .kubernetes/charts/front/Chart.yaml
+          upgrade_chart .kubernetes/charts/back/Chart.yaml
+          upgrade_chart .kubernetes/charts/pilot-image-board/Chart.yaml
+      - name: Commit Changes
+        run: |
+          git config --global user.name "${{ env.CI_COMMIT_AUTHOR }}"
+          git config --global user.email "username@users.noreply.github.com"
+          git add ".kubernetes/charts"
+          git commit -m "${{ env.CI_COMMIT_MESSAGE }}"
+          git push
