@@ -1,0 +1,70 @@
+
+{{- if .Values.migration.enabled }}
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: {{ include "back.fullname" . }}-migration
+  labels:
+    {{- include "back.labels" . | nindent 4 }}
+  annotations:
+    "helm.sh/hook": post-install,post-upgrade
+    "helm.sh/hook-weight": "-5"
+    "helm.sh/hook-delete-policy": hook-succeeded,hook-failed
+spec:
+  template:
+    spec:
+      initContainers:
+      - name: {{ .Chart.Name }}-migration-init
+        image: "{{ .Values.migration.postgresInitImage.repository }}:{{ .Values.migration.postgresInitImage.tag }}"
+        imagePullPolicy: {{ .Values.migration.postgresInitImage.pullPolicy }}
+        command:
+        - /bin/sh
+        - -c
+        - |
+          until pg_isready -U postgres -h {{ .Chart.Name }}-postgresql
+          do
+            echo "Waiting for postgresql to be ready..."
+            sleep 2
+          done
+      containers:
+      - name: {{ .Chart.Name }}-migration
+        image: "{{ .Values.migration.image.repository }}:{{ .Values.migration.image.tag | default .Chart.AppVersion }}"
+        imagePullPolicy: {{ .Values.migration.image.pullPolicy }}
+        env:
+        - name: PG_HOST
+          value: {{ .Chart.Name }}-postgresql
+        - name: PG_PORT
+          value: "5432"
+        - name: PG_USER
+          value: postgres
+        - name: PG_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: {{ .Chart.Name }}-postgresql
+              key: postgres-password
+        - name: PG_DATABASE
+          value: {{ .Values.postgresql.auth.database }}
+      - name: {{ .Chart.Name }}-bucket-creation
+        image: minio/minio
+        imagePullPolicy: IfNotPresent
+        command:
+        - /bin/sh
+        - -c
+        - |
+          mc config host add minio {{ .Values.s3.host }} $MINIO_ACCESS_KEY $MINIO_SECRET_KEY
+          # create bucket if not exists
+          mc mb minio/{{ .Values.s3.bucketName }} --ignore-existing
+        env:
+        - name: MINIO_ACCESS_KEY
+          valueFrom:
+            secretKeyRef:
+              name: {{ .Values.s3.secretName }}
+              key: accesskey
+        - name: MINIO_SECRET_KEY
+          valueFrom:
+            secretKeyRef:
+              name: {{ .Values.s3.secretName }}
+              key: secretkey
+      restartPolicy: Never
+  backoffLimit: 3
+{{- end }}

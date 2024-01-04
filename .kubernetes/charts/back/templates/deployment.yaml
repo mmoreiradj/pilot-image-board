@@ -1,0 +1,116 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "back.fullname" . }}
+  labels:
+    {{- include "back.labels" . | nindent 4 }}
+spec:
+  {{- if not .Values.autoscaling.enabled }}
+  replicas: {{ .Values.replicaCount }}
+  {{- end }}
+  selector:
+    matchLabels:
+      {{- include "back.selectorLabels" . | nindent 6 }}
+  template:
+    metadata:
+      {{- with .Values.podAnnotations }}
+      annotations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      labels:
+        {{- include "back.labels" . | nindent 8 }}
+        {{- with .Values.podLabels }}
+        {{- toYaml . | nindent 8 }}
+        {{- end }}
+    spec:
+      {{- with .Values.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      serviceAccountName: {{ include "back.serviceAccountName" . }}
+      securityContext:
+        {{- toYaml .Values.podSecurityContext | nindent 8 }}
+      containers:
+        - name: {{ .Chart.Name }}
+          securityContext:
+            {{- toYaml .Values.securityContext | nindent 12 }}
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag | default .Chart.AppVersion }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          env:
+          - name: PG_HOST
+            value: {{ .Chart.Name }}-postgresql
+          - name: PG_PORT
+            value: "5432"
+          - name: PG_USER
+            value: postgres
+          - name: PG_PASSWORD
+            valueFrom:
+              secretKeyRef:
+                name: {{ .Chart.Name }}-postgresql
+                key: postgres-password
+          - name: PORT
+            value: "{{ .Values.service.port }}"
+          - name: NODE_ENV
+            value: "production"
+          - name: PG_DATABASE
+            value: {{ .Values.postgresql.auth.database }}
+          - name: CORS_ORIGIN
+            value: {{ .Values.frontend.host }}
+          - name: S3_BUCKET_NAME
+            value: {{ .Values.s3.bucketName }}
+          - name: S3_ENDPOINT
+            value: {{ .Values.s3.host }}
+          - name: S3_ACCESS_KEY
+            valueFrom:
+              secretKeyRef:
+                name: {{ .Values.s3.secretName }}
+                key: accesskey
+          - name: S3_SECRET_KEY
+            valueFrom:
+              secretKeyRef:
+                name: {{ .Values.s3.secretName }}
+                key: secretkey
+          - name: JWT_ACCESS_SECRET
+            valueFrom:
+              secretKeyRef:
+                name: {{ .Values.jwt.secretName }}
+                key: access
+          - name: JWT_REFRESH_SECRET
+            valueFrom:
+              secretKeyRef:
+                name: {{ .Values.jwt.secretName }}
+                key: refresh
+          ports:
+            - name: http
+              containerPort: {{ .Values.service.port }}
+              protocol: TCP
+          livenessProbe:
+            httpGet:
+              path: /v1/health/db
+              port: http
+          readinessProbe:
+            httpGet:
+              path: /v1/health/db
+              port: http
+          resources:
+            {{- toYaml .Values.resources | nindent 12 }}
+          {{- with .Values.volumeMounts }}
+          volumeMounts:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+      {{- with .Values.volumes }}
+      volumes:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.affinity }}
+      affinity:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
