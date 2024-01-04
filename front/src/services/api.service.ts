@@ -1,7 +1,7 @@
 import axios from "axios";
 export const API_BASE_URL =
   process.env.VUE_APP_NODE_ENV === "production"
-    ? `api.${window.location.hostname}`
+    ? `https://api.${window.location.hostname}/v1`
     : process.env.VUE_APP_API_BASE_URL;
 
 axios.defaults.withCredentials = true;
