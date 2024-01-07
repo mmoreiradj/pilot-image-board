@@ -2,7 +2,7 @@
 import { useAlertsStore } from "@/stores";
 import { authService, categoryService } from "@/services";
 import CustomModal from "@/components/common/CustomModal.vue";
-import { ref, defineEmits } from "vue";
+import { ref } from "vue";
 import { Category } from "@/models";
 import router from "@/router";
 

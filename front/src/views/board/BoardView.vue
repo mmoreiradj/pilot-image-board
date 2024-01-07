@@ -5,6 +5,7 @@ import { boardService } from "@/services";
 import { useRoute, useRouter } from "vue-router";
 import { useAlertsStore } from "@/stores";
 import ThreadList from "@/components/thread/ThreadList.vue";
+import { AxiosError } from "axios";
 
 // Router and route
 const failed = ref(false);
@@ -30,8 +31,8 @@ if (Number.isNaN(+boardId)) {
   try {
     const response = await boardService.getBoard(+boardId);
     board.value = response.data;
-  } catch (error: any) {
-    if (error.response && error.response.status === 404) {
+  } catch (error: unknown | AxiosError) {
+    if (error instanceof AxiosError && error.response?.status === 404) {
       failed.value = true;
       await router.replace({
         name: "not-found",

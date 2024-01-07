@@ -4,11 +4,12 @@ import { authService, refreshApiService } from "@/services";
 import { useAlertsStore } from "@/stores";
 import { useRouter } from "vue-router";
 import { User } from "@/models";
+import { AxiosError } from "axios";
 
 const alertStore = useAlertsStore();
 const router = useRouter();
 
-const onSubmit = async (values: User, actions: any) => {
+const onSubmit = async (values: User, actions: unknown) => {
   try {
     const response = await authService.signIn(values);
 
@@ -20,8 +21,8 @@ const onSubmit = async (values: User, actions: any) => {
     await router.push({
       name: "home",
     });
-  } catch (error: any) {
-    if (error.response && error.response.status === 401) {
+  } catch (error: unknown | AxiosError) {
+    if (error instanceof AxiosError && error.response?.status === 401) {
       actions.setErrors({
         username: ["Invalid credentials"],
         password: ["Invalid credentials"],

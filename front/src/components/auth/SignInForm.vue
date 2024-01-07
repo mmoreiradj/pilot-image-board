@@ -17,7 +17,7 @@ useForm({
   validationSchema: userSchema,
 });
 
-const onSubmit = (values: never, actions: never) => {
+const onSubmit = (values: Record<string, unknown>, actions: any) => {
   emit("submit", values, actions);
 };
 </script>

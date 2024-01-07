@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { boardService, categoryService } from "@/services";
+import { boardService } from "@/services";
 import { useAlertsStore } from "@/stores";
 import CustomModal from "@/components/common/CustomModal.vue";
 import { ref } from "vue";
@@ -58,19 +58,6 @@ try {
     timeout: 5000,
   });
 }
-
-const getBoardCategoryName = async (categoryId: number) => {
-  try {
-    const response = await categoryService.getCategory(categoryId);
-    return response.data.name;
-  } catch (error) {
-    alertsStore.addAlert({
-      type: "error",
-      description: "Error fetching board category",
-      timeout: 5000,
-    });
-  }
-};
 </script>
 
 <template>

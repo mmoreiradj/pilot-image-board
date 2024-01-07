@@ -5,6 +5,7 @@ import { authService, boardService, threadService } from "@/services";
 import { ref } from "vue";
 import { Board, Thread } from "@/models";
 import ThreadForm from "@/components/thread/ThreadForm.vue";
+import { AxiosError } from "axios";
 
 const router = useRouter();
 
@@ -23,8 +24,12 @@ if (Number.isNaN(boardId)) {
   try {
     const response = await boardService.getBoard(boardId);
     board.value = response.data;
-  } catch (error: any) {
-    if (error.response && error.response.status === 404) {
+  } catch (error: unknown | AxiosError) {
+    if (
+      error instanceof AxiosError &&
+      error.response &&
+      error.response.status === 404
+    ) {
       router.replace({
         name: "not-found",
         params: { pathMatch: useRoute().path.substring(1).split("/") },
@@ -44,7 +49,7 @@ if (Number.isNaN(boardId)) {
   }
 }
 
-const onSubmit = async (values: Thread, actions: any) => {
+const onSubmit = async (values: Thread, actions: unknown) => {
   try {
     const response = await threadService.createThread(values);
     useAlertsStore().addAlert({
@@ -56,8 +61,8 @@ const onSubmit = async (values: Thread, actions: any) => {
       name: "thread",
       params: { boardId: boardId, threadId: response.data.id },
     });
-  } catch (error: any) {
-    if (error?.response?.status === 401) {
+  } catch (error: unknown | AxiosError) {
+    if (error instanceof AxiosError && error.response?.status === 401) {
       if (await authService.refresh()) {
         await onSubmit(values, actions);
       } else {

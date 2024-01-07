@@ -11,6 +11,7 @@ import {
   imageService,
 } from "@/services";
 import PostForm from "@/components/post/PostForm.vue";
+import { AxiosError } from "axios";
 
 // route and router
 const route = useRoute();
@@ -24,7 +25,6 @@ const boardId = Number(route.params.boardId);
 // data
 const board = ref({} as Board);
 const thread = ref({} as Thread);
-const file = ref<File | null>(null);
 const fileName = ref<string | null>(null);
 const fileError = ref<string | null>(null);
 
@@ -52,8 +52,8 @@ if (Number.isNaN(threadId) || Number.isNaN(boardId)) {
       board.value = boardResponse.data;
       thread.value = threadResponse.data;
     }
-  } catch (error: any) {
-    if (error.response && error.response.status === 404) {
+  } catch (error: unknown | AxiosError) {
+    if (error instanceof AxiosError && error.response?.status === 404) {
       failed.value = true;
       router.replace({
         name: "not-found",
@@ -82,11 +82,11 @@ const handleFileChange = async (e: any) => {
     formData.append("file", file);
     const response = await imageService.postImage(formData);
     fileName.value = response.data.file_id;
-  } catch (error: any) {
-    if (error?.response?.status === 400) {
+  } catch (error: unknown | AxiosError) {
+    if (error instanceof AxiosError && error.response?.status === 400) {
       fileError.value = "Make sure the file is an image and is less than 5MB";
     }
-    if (error?.response?.status === 401) {
+    if (error instanceof AxiosError && error.response?.status === 401) {
       if (await authService.refresh()) {
         await handleFileChange(e);
       } else {
@@ -121,8 +121,8 @@ const handlePostSubmit = async (post: Post, actions: never) => {
         threadId: thread.value.id,
       },
     });
-  } catch (error: any) {
-    if (error?.response?.status === 401) {
+  } catch (error: unknown | AxiosError) {
+    if (error instanceof AxiosError && error.response?.status === 401) {
       if (await authService.refresh()) {
         await handlePostSubmit(post, actions);
       } else {

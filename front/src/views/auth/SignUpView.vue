@@ -4,6 +4,7 @@ import { useRouter } from "vue-router";
 import { useAlertsStore } from "@/stores";
 import { User } from "@/models";
 import { authService } from "@/services";
+import { AxiosError } from "axios";
 
 const alertStore = useAlertsStore();
 const router = useRouter();
@@ -24,8 +25,9 @@ const onSubmit = async (values: User, actions: any) => {
     await router.push({
       name: "signin",
     });
-  } catch (error: any) {
+  } catch (error: unknown | AxiosError) {
     if (
+      error instanceof AxiosError &&
       error.response &&
       error.response.status === 401 &&
       error.response.data.error.code === 2000 &&

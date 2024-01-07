@@ -1,11 +1,9 @@
 <script setup lang="ts">
-import { computed, defineEmits, defineProps, ref } from "vue";
+import { computed, defineEmits, defineProps } from "vue";
 import { Form, Field, ErrorMessage } from "vee-validate";
-import { Category } from "@/models";
 import { yupCategorySchema } from "@/schemas";
 
 const emit = defineEmits(["form-submitted"]);
-const category = ref({} as Category);
 
 const props = defineProps({
   category: {

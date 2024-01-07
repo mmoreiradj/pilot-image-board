@@ -29,7 +29,7 @@ useForm({
   validationSchema: userSchema,
 });
 
-const onSubmit = (values: never, actions: never) => {
+const onSubmit = (values: unknown, actions: unknown) => {
   emit("submit", values, actions);
 };
 </script>
