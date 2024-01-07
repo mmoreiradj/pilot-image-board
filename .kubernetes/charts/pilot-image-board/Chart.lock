@@ -1,9 +1,0 @@
-dependencies:
-- name: front
-  repository: file://../front
-  version: 0.1.0
-- name: back
-  repository: file://../back
-  version: 0.1.0
-digest: sha256:4c2f2d6247d26e8f2eeb13769b6f099ddd9504e1a44006136dcc2a1f9843488c
-generated: "2024-01-04T18:55:13.002748671+01:00"
