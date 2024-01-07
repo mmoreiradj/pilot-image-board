@@ -1,0 +1,37 @@
+name: Node Checks
+
+on:
+  workflow_call:
+    inputs:
+      working-directory:
+        description: "The working directory to run the checks in"
+        required: true
+        default: "."
+        type: string
+
+jobs:
+  quality:
+    name: Code Quality
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Setup Node
+        uses: actions/setup-node@v3
+        with:
+          node-version: 20.x
+      - name: Setup PNPM
+        uses: pnpm/action-setup@v2
+        with:
+          version: 8
+      - name: Install Dependencies
+        working-directory: ${{ github.event.inputs.working-directory }}
+        run: pnpm install
+      - name: Check Code Style
+        working-directory: ${{ github.event.inputs.working-directory }}
+        run: pnpm --if-present format:ci
+      - name: Check Code Quality
+        working-directory: ${{ github.event.inputs.working-directory }}
+        run: pnpm --if-present lint:ci
+      - name: Check If Application Builds
+        working-directory: ${{ github.event.inputs.working-directory }}
+        run: pnpm --if-present build
