@@ -21,7 +21,7 @@ spec:
         - /bin/sh
         - -c
         - |
-          until pg_isready -U postgres -h {{ .Chart.Name }}-postgresql
+          until pg_isready -U postgres -h {{ .Release.Name }}-postgresql
           do
             echo "Waiting for postgresql to be ready..."
             sleep 2
@@ -32,7 +32,7 @@ spec:
         imagePullPolicy: {{ .Values.migration.image.pullPolicy }}
         env:
         - name: PG_HOST
-          value: {{ .Chart.Name }}-postgresql
+          value: {{ .Release.Name }}-postgresql
         - name: PG_PORT
           value: "5432"
         - name: PG_USER
@@ -40,7 +40,7 @@ spec:
         - name: PG_PASSWORD
           valueFrom:
             secretKeyRef:
-              name: {{ .Chart.Name }}-postgresql
+              name: {{ .Release.Name }}-postgresql
               key: postgres-password
         - name: PG_DATABASE
           value: {{ .Values.postgresql.auth.database }}

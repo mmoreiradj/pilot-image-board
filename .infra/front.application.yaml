@@ -1,0 +1,56 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: pilot-image-board-front
+  namespace: argo-cd
+  labels:
+    name: pilot-image-board-front
+spec:
+  project: mmoreiradj
+  source:
+    repoURL: https://github.com/mmoreiradj/pilot-image-board.git
+    targetRevision: HEAD
+    path: .infra/charts/front
+    helm:
+      valuesObject:
+        ingress:
+          enabled: true
+          className: "traefik"
+          annotations:
+            cert-manager.io/cluster-issuer: letsencrypt-production
+            traefik.ingress.kubernetes.io/redirect-entry-point: https
+            traefik.ingress.kubernetes.io/redirect-permanent: "true"
+          hosts:
+            - host: pilot.do.moreiradj.net
+              paths:
+                - path: /
+                  pathType: Prefix
+          tls:
+          - secretName: pilot.do.moreiradj.net
+            hosts:
+              - pilot.do.moreiradj.net
+
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: pilot-image-board
+
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+      allowEmpty: true
+    syncOptions:
+    - Validate=false
+    - CreateNamespace=true
+    - PrunePropagationPolicy=foreground
+    - PruneLast=true
+    - RespectIgnoreDifferences=true
+
+    retry:
+      limit: 5
+      backoff:
+        duration: 5s
+        factor: 2
+        maxDuration: 3m
+
+  revisionHistoryLimit: 3
