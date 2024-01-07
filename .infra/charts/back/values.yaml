@@ -7,7 +7,7 @@ replicaCount: 1
 postgresql:
   auth:
     database: pilot_image_board
-    existingSecret: postgresql
+    existingSecret: back-postgresql
   containerPorts:
     postgresql: 5432
 
