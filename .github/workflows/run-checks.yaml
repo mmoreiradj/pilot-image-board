@@ -24,14 +24,14 @@ jobs:
         with:
           version: 8
       - name: Install Dependencies
-        working-directory: ${{ github.event.inputs.working-directory }}
+        working-directory: ${{ inputs.working-directory }}
         run: pnpm install
       - name: Check Code Style
-        working-directory: ${{ github.event.inputs.working-directory }}
+        working-directory: ${{ inputs.working-directory }}
         run: pnpm --if-present format:ci
       - name: Check Code Quality
-        working-directory: ${{ github.event.inputs.working-directory }}
+        working-directory: ${{ inputs.working-directory }}
         run: pnpm --if-present lint:ci
       - name: Check If Application Builds
-        working-directory: ${{ github.event.inputs.working-directory }}
+        working-directory: ${{ inputs.working-directory }}
         run: pnpm --if-present build
