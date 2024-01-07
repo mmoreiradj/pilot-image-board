@@ -44,13 +44,12 @@ jobs:
             sed -i "0,/version: .*/s/version: .*/version: \"$new_version\"/" "$chart_file"
           }
 
-          upgrade_chart .kubernetes/charts/front/Chart.yaml
-          upgrade_chart .kubernetes/charts/back/Chart.yaml
-          upgrade_chart .kubernetes/charts/pilot-image-board/Chart.yaml
+          upgrade_chart .infra/charts/front/Chart.yaml
+          upgrade_chart .infra/charts/back/Chart.yaml
       - name: Commit Changes
         run: |
           git config --global user.name "${{ env.CI_COMMIT_AUTHOR }}"
           git config --global user.email "username@users.noreply.github.com"
-          git add ".kubernetes/charts"
+          git add ".infra/charts"
           git commit -m "${{ env.CI_COMMIT_MESSAGE }}"
           git push
