@@ -13,6 +13,51 @@ jobs:
     with:
       working-directory: ${{ matrix.working-directory }}
 
+  sync-app:
+    name: Sync App
+    runs-on: ubuntu-latest
+    permissions:
+      pull-requests: write
+    needs: [qa]
+    env:
+      PR_NUMBER: ${{ github.event.pull_request.number }}
+      COMMIT_SHA: ${{ github.event.pull_request.head.sha }}
+      GITHUB_REPOSITORY: ${{ github.repository }}
+      ARGOCD_SERVER: ${{ secrets.ARGOCD_SERVER }}
+      ARGOCD_USERNAME: ${{ secrets.ARGOCD_USERNAME }}
+      ARGOCD_PASSWORD: ${{ secrets.ARGOCD_PASSWORD }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Create Values File
+        run: ./.infra/scripts/create-values-files.sh "$COMMIT_SHA" "$PR_NUMBER"
+      - name: Setup ArgoCD CLI
+        run: |
+          curl -sSL -o argocd-linux-amd64 https://github.com/argoproj/argo-cd/releases/latest/download/argocd-linux-amd64
+          sudo install -m 555 argocd-linux-amd64 /usr/local/bin/argocd
+          rm argocd-linux-amd64
+      - name: Login to ArgoCD
+        run: argocd login "$ARGOCD_SERVER" --username "$ARGOCD_USERNAME" --password "$ARGOCD_PASSWORD"
+      - name: Upsert Apps
+        id: upsert-apps
+        run: |
+          REPO_NAME=$(echo $GITHUB_REPOSITORY | sed 's/.*\///g')
+          NAMESPACE=$(echo $REPO_NAME | sed 's/\//-/g')-pr-$PR_NUMBER
+          ./.infra/scripts/create-argo-cd-app.sh "$NAMESPACE-front" "$NAMESPACE" "$COMMIT_SHA" "/tmp/front.values.yaml" "front"
+          ./.infra/scripts/create-argo-cd-app.sh "$NAMESPACE-back" "$NAMESPACE" "$COMMIT_SHA" "/tmp/back.values.yaml" "back"
+          echo "frontend-url=https://$NAMESPACE.do.moreiradj.net" >> $GITHUB_OUTPUT
+      - name: Tell the user that the app sync started
+        uses: thollander/actions-comment-pull-request@v2
+        with:
+          message: |
+            :rocket: The app was synced successfully!
+
+            :white_check_mark: You can access the app [here](${{ steps.upsert-apps.outputs.frontend-url }})
+
+            (It may take a few minutes for the app to be available)
+
   build:
     needs: [qa]
     name: Build

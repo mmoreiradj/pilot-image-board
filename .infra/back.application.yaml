@@ -13,10 +13,6 @@ spec:
     path: .infra/charts/back
     helm:
       valuesObject:
-        postgresql:
-          auth:
-            existingSecret: pilot-image-board-back-postgresql
-
         frontend:
           host: https://pilot.do.moreiradj.net
 
