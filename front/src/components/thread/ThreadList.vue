@@ -6,6 +6,7 @@ import { useAlertsStore, useUserStore } from "@/stores";
 import LoadingComponent from "@/App.vue";
 import ThreadItem from "@/components/thread/ThreadItem.vue";
 import CustomModal from "@/components/common/CustomModal.vue";
+import { AxiosError } from "axios";
 
 // props
 const props = defineProps({
@@ -23,36 +24,36 @@ const props = defineProps({
 // refs
 const threads = ref([] as Thread[]);
 const loading = ref(false);
-const offset = ref(0);
-const limit = 10;
+const limit = 10000000;
 const showDeleteModal = ref(false);
 const selectedThread = ref(null as Thread | null);
 
 // logic
-const loadMore = async () => {
-  try {
-    loading.value = true;
-    const response = await threadService.getThreads({
-      limit: limit,
-      offset: offset.value,
-      boardId: props.boardId,
-    });
-    response.data.results.forEach((result: Thread) => {
-      if (!threads.value.some((thread: Thread) => thread.id === result.id)) {
-        threads.value.push(result);
-      }
-    });
-    offset.value = offset.value + 10;
-    loading.value = false;
-  } catch (error: any) {
-    useAlertsStore().addAlert({
-      type: "error",
-      description: "Something went wrong... Try again later",
-      timeout: 5000,
-    });
-    loading.value = false;
+async function loadThreads() {
+  if (props.boardId) {
+    try {
+      loading.value = true;
+      const response = await threadService.getThreads({
+        limit: limit,
+        offset: 0,
+        boardId: props.boardId,
+      });
+      response.data.results.forEach((result: Thread) => {
+        if (!threads.value.some((thread: Thread) => thread.id === result.id)) {
+          threads.value.push(result);
+        }
+      });
+    } catch (error: unknown) {
+      useAlertsStore().addAlert({
+        type: "error",
+        description: "Something went wrong... Try again later",
+        timeout: 5000,
+      });
+      loading.value = false;
+    }
   }
-};
+}
+loadThreads();
 
 const closeDeleteModal = () => {
   showDeleteModal.value = false;
@@ -73,8 +74,8 @@ const handleDelete = async (item = {} as Thread, del = false) => {
         description: "Thread deleted successfully",
         timeout: 5000,
       });
-    } catch (error: any) {
-      if (error?.response?.status === 401) {
+    } catch (error: unknown | AxiosError) {
+      if (error instanceof AxiosError && error.response?.status === 401) {
         if (await authService.refresh()) {
           await handleDelete(item, del);
         }
@@ -101,7 +102,6 @@ const handleDelete = async (item = {} as Thread, del = false) => {
     :preview="true"
     @delete="handleDelete"
   />
-  <infinite-loading @infinite="loadMore" />
   <loading-component v-if="loading" />
   <custom-modal
     v-model="showDeleteModal"

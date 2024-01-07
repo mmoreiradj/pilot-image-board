@@ -1,14 +1,9 @@
 <script setup lang="ts">
 import { useRoute, useRouter } from "vue-router";
-import { Board, Post, Thread } from "@/models";
+import { Board, Thread } from "@/models";
 import { ref } from "vue";
-import { useAlertsStore, usePostsStore } from "@/stores";
-import {
-  boardService,
-  threadService,
-  postService,
-  authService,
-} from "@/services";
+import { useAlertsStore } from "@/stores";
+import { boardService, threadService } from "@/services";
 import ThreadItem from "@/components/thread/ThreadItem.vue";
 import { AxiosError } from "axios";
 
@@ -49,8 +44,12 @@ if (Number.isNaN(threadId) || Number.isNaN(boardId)) {
       board.value = boardResponse.data;
       thread.value = threadResponse.data;
     }
-  } catch (error: any) {
-    if (error.response && error.response.status === 404) {
+  } catch (error: unknown | AxiosError) {
+    if (
+      error instanceof AxiosError &&
+      error.response &&
+      error.response.status === 404
+    ) {
       failed.value = true;
       router.replace({
         name: "not-found",
@@ -70,35 +69,6 @@ if (Number.isNaN(threadId) || Number.isNaN(boardId)) {
     }
   }
 }
-
-const onSubmit = async (values: Post, actions: any) => {
-  try {
-    const response = await postService.createPost(values);
-    actions.setFieldValue("description", "");
-    useAlertsStore().addAlert({
-      type: "success",
-      description: "Post created successfully",
-      timeout: 5000,
-    });
-    usePostsStore().addPosts([response.data]);
-  } catch (error: any | AxiosError) {
-    if (error?.response?.status === 401) {
-      if (await authService.refresh()) {
-        await onSubmit(values, actions);
-      } else {
-        await router.push({
-          name: "signin",
-        });
-      }
-    } else {
-      useAlertsStore().addAlert({
-        type: "error",
-        description: "Something went wrong... Try again later",
-        timeout: 5000,
-      });
-    }
-  }
-};
 </script>
 
 <template>
