@@ -56,7 +56,7 @@ spec:
         - name: PG_PASSWORD
           valueFrom:
             secretKeyRef:
-              name: {{ .Release.Name }}-postgresql
+              name: back-postgresql
               key: postgres-password
         - name: PG_DATABASE
           value: {{ .Values.postgresql.auth.database }}
@@ -97,7 +97,7 @@ spec:
           - name: PG_PASSWORD
             valueFrom:
               secretKeyRef:
-                name: {{ .Release.Name }}-postgresql
+                name: back-postgresql
                 key: postgres-password
           - name: PORT
             value: "{{ .Values.service.port }}"

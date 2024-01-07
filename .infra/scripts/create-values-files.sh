@@ -29,6 +29,5 @@ yq eval ".image.tag = \"$COMMIT_SHA\"" -i /tmp/front.values.yaml
 
 yq eval ".image.tag = \"$COMMIT_SHA\"" -i /tmp/back.values.yaml
 yq eval ".migration.image.tag = \"$COMMIT_SHA\"" -i /tmp/back.values.yaml
-yq eval ".postgresql.auth.existingSecret = \"pilot-image-board-pr-$PR_NUMBER-back-postgresql\"" -i /tmp/back.values.yaml
 
 echo "Created values files for front at /tmp/front.values.yaml and back at /tmp/back.values.yaml"
