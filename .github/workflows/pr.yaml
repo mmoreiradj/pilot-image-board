@@ -1,0 +1,35 @@
+name: Pull Request
+
+on:
+  pull_request:
+
+jobs:
+  #   qa:
+  #     name: Quality Assurance
+  #     strategy:
+  #       matrix:
+  #         working-directory: [back, front]
+  #     uses: mmoreiradj/pilot-image-board/.github/workflows/run-checks.yaml@main
+  #     with:
+  #       working-directory: ${{ matrix.working-directory }}
+
+  build:
+    # needs: [qa]
+    name: Build
+    uses: mmoreiradj/pilot-image-board/.github/workflows/build-all-images.yaml@main
+    permissions:
+      packages: write
+
+  # Tells the user that the images were built successfully
+  comment:
+    # needs: [build]
+    name: Successful Build Message
+    runs-on: ubuntu-latest
+    env:
+      REF_NAME: ${{ github.ref_name }}
+      COMMIT_SHA: ${{ github.event.pull_request.head.sha }}
+    steps:
+      - name: Debug
+        run: |
+          echo ${{ github.event.pull_request }}
+          echo ${{ github.ref_name }}
