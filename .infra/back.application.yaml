@@ -13,6 +13,10 @@ spec:
     path: .infra/charts/back
     helm:
       valuesObject:
+        postgresql:
+          auth:
+            existingSecret: pilot-image-board-back-postgresql
+
         frontend:
           host: https://pilot.do.moreiradj.net
 
@@ -37,9 +41,9 @@ spec:
                 - path: /
                   pathType: Prefix
           tls:
-          - secretName: api.pilot.do.moreiradj.net
-            hosts:
-              - api.pilot.do.moreiradj.net
+            - secretName: api.pilot.do.moreiradj.net
+              hosts:
+                - api.pilot.do.moreiradj.net
 
   destination:
     server: https://kubernetes.default.svc
@@ -51,11 +55,11 @@ spec:
       selfHeal: true
       allowEmpty: true
     syncOptions:
-    - Validate=false
-    - CreateNamespace=true
-    - PrunePropagationPolicy=foreground
-    - PruneLast=true
-    - RespectIgnoreDifferences=true
+      - Validate=false
+      - CreateNamespace=true
+      - PrunePropagationPolicy=foreground
+      - PruneLast=true
+      - RespectIgnoreDifferences=true
 
     retry:
       limit: 5

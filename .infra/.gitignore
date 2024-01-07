@@ -1,2 +1,3 @@
 minio-secret.yaml
 jwt-secret.yaml
+pg-secret.yaml
