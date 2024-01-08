@@ -1,0 +1,60 @@
+name: Clean Up Argo App and Namespace
+
+on:
+  workflow_call:
+    inputs:
+      namespace:
+        description: "Namespace to clean up"
+        required: true
+        type: string
+  workflow_dispatch:
+    inputs:
+      namespace:
+        description: "Namespace to clean up"
+        required: true
+        type: string
+  pull_request:
+    types: [closed]
+
+jobs:
+  clean-up:
+    name: Clean Up
+    runs-on: self-hosted
+    env:
+      HOME: /tmp/runner
+      ARGOCD_SERVER: ${{ secrets.ARGOCD_SERVER }}
+      ARGOCD_USERNAME: ${{ secrets.ARGOCD_USERNAME }}
+      ARGOCD_PASSWORD: ${{ secrets.ARGOCD_PASSWORD }}
+    steps:
+      - name: Setup Argo CD CLI
+        run: |
+          if command -v argocd &> /dev/null
+          then
+            echo "argocd is already installed"
+            exit 0
+          fi
+          curl -sSL -o argocd-linux-amd64 https://github.com/argoproj/argo-cd/releases/latest/download/argocd-linux-amd64
+          install -m 555 argocd-linux-amd64 /usr/local/bin/argocd
+          rm argocd-linux-amd64
+      - name: Login to ArgoCD
+        run: argocd login "$ARGOCD_SERVER" --username "$ARGOCD_USERNAME" --password "$ARGOCD_PASSWORD" --grpc-web
+      - name: Delete Argo App
+        run: argocd app delete --grpc-web --yes --selector "target-ns=${{ inputs.namespace }}"
+      - name: Setup Kubectl
+        uses: azure/setup-kubectl@v3
+        with:
+          version: "latest"
+      - name: Delete Namespace
+        run: |
+          echo "$KUBECONFIG" > /tmp/kubeconfig
+          chmod 600 /tmp/kubeconfig
+          kubectl delete ns "${{ inputs.namespace }}" --kubeconfig /tmp/kubeconfig
+          rm /tmp/kubeconfig
+      - name: Comment on PR
+        if: github.event_name == 'pull_request'
+        uses: thollander/actions-comment-pull-request@v2
+        with:
+          message: |
+            :white_check_mark: Cleaned up namespace `${{ inputs.namespace }}`
+
+            :wave: Thanks for introducing bugs to the codebase!
