@@ -15,6 +15,7 @@ fi
 
 argocd app create "$APP_NAME" \
   --repo 'https://github.com/mmoreiradj/pilot-image-board.git' \
+  --label "target-ns=$NAMESPACE" \
   --path ".infra/charts/$CHART" \
   --dest-server 'https://kubernetes.default.svc' \
   --dest-namespace "$NAMESPACE" \
