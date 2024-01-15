@@ -5,25 +5,25 @@
 replicaCount: 1
 
 postgresql:
-  primary:
-    persistence:
-      size: 2Gi
-  auth:
-    database: pilot_image_board
-    existingSecret: back-postgresql
-  containerPorts:
-    postgresql: 5432
+  host: "postgresql"
+  database: pilot_image_board
+  secretName: ""
+  passswordKey: "postgres-password"
 
 frontend:
   host: ""
 
 s3:
   secretName: ""
+  adminUserKey: "minio-access-key"
+  adminSecretKey: "minio-secret-key"
   host: ""
   bucketName: ""
 
 jwt:
   secretName: ""
+  accessKey: "access"
+  refreshKey: "refresh"
 
 image:
   repository: ghcr.io/mmoreiradj/pilot-image-board-back
