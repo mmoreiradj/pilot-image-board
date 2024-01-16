@@ -1,60 +1,65 @@
 name: Clean Up Argo App and Namespace
 
 on:
-  workflow_call:
-    inputs:
-      namespace:
-        description: "Namespace to clean up"
-        required: true
-        type: string
-  workflow_dispatch:
-    inputs:
-      namespace:
-        description: "Namespace to clean up"
-        required: true
-        type: string
   pull_request:
     types: [closed]
 
 jobs:
   clean-up:
+    concurrency:
+      group: ephemeral-${{ github.event.pull_request.number }}
     name: Clean Up
-    runs-on: self-hosted
+    runs-on: ubuntu-latest
     env:
-      HOME: /tmp/runner
-      ARGOCD_SERVER: ${{ secrets.ARGOCD_SERVER }}
-      ARGOCD_USERNAME: ${{ secrets.ARGOCD_USERNAME }}
-      ARGOCD_PASSWORD: ${{ secrets.ARGOCD_PASSWORD }}
+      PR_NUMBER: ${{ github.event.pull_request.number }}
+      GITHUB_REPOSITORY: ${{ github.repository }}
+    permissions:
+      issues: write
     steps:
-      - name: Setup Argo CD CLI
-        run: |
-          if command -v argocd &> /dev/null
-          then
-            echo "argocd is already installed"
-            exit 0
-          fi
-          curl -sSL -o argocd-linux-amd64 https://github.com/argoproj/argo-cd/releases/latest/download/argocd-linux-amd64
-          install -m 555 argocd-linux-amd64 /usr/local/bin/argocd
-          rm argocd-linux-amd64
-      - name: Login to ArgoCD
-        run: argocd login "$ARGOCD_SERVER" --username "$ARGOCD_USERNAME" --password "$ARGOCD_PASSWORD" --grpc-web
-      - name: Delete Argo App
-        run: argocd app delete --grpc-web --yes --selector "target-ns=${{ inputs.namespace }}"
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
       - name: Setup Kubectl
         uses: azure/setup-kubectl@v3
         with:
           version: "latest"
-      - name: Delete Namespace
+      - name: Setup Kubeconfig
         run: |
-          echo "$KUBECONFIG" > /tmp/kubeconfig
-          chmod 600 /tmp/kubeconfig
-          kubectl delete ns "${{ inputs.namespace }}" --kubeconfig /tmp/kubeconfig
-          rm /tmp/kubeconfig
+          echo "${{ secrets.KUBECONFIG }}" > "${{ runner.temp }}/kubeconfig"
+          chmod 400 "${{ runner.temp }}/kubeconfig"
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: 1.6.6
+      - name: Terraform Init
+        working-directory: .infra/terraform/ephemeral
+        run: |
+          terraform init \
+            -input=false \
+            -backend-config="bucket=${{ secrets.S3_BUCKET }}" \
+            -backend-config="access_key=${{ secrets.S3_ACCESS_KEY }}" \
+            -backend-config="secret_key=${{ secrets.S3_SECRET_KEY }}" \
+            -backend-config="region=${{ secrets.S3_REGION }}" \
+            -backend-config="key=kubernetes/apps/${{ env.GITHUB_REPOSITORY }}/ephemeral/pr-${{ env.PR_NUMBER }}/terraform.tfstate" \
+            -backend-config='endpoints={"s3": "${{ secrets.S3_ENDPOINT }}"}'
+      - name: Terraform Destroy
+        working-directory: ./.infra/terraform/ephemeral
+        run: |
+          REPO_NAME=$(echo "$GITHUB_REPOSITORY" | sed 's/.*\///g')
+          NAMESPACE=$(echo "$REPO_NAME" | sed 's/\//-/g')-pr-"$PR_NUMBER"
+          terraform destroy \
+            -auto-approve \
+            -var "vault_token=${{ secrets.VAULT_TOKEN }}" \
+            -var "vault_address=${{ secrets.VAULT_ADDRESS }}" \
+            -var "namespace=$NAMESPACE" \
+            -var "image_tags=$COMMIT_SHA" \
+            -var "charts_target_revision=${{ github.head_ref }}" \
+            -var "kube_config_path=${{ runner.temp }}/kubeconfig"
       - name: Comment on PR
-        if: github.event_name == 'pull_request'
         uses: thollander/actions-comment-pull-request@v2
         with:
           message: |
-            :white_check_mark: Cleaned up namespace `${{ inputs.namespace }}`
+            :white_check_mark: Cleaned up ephemeral deployment !
 
             :wave: Thanks for introducing bugs to the codebase!
