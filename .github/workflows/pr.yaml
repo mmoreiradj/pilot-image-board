@@ -20,35 +20,52 @@ jobs:
       pull-requests: write
     needs: [qa]
     outputs:
-      frontend-url: ${{ steps.upsert-apps.outputs.frontend-url }}
+      frontend-url: ${{ steps.tf-apply.outputs.frontend-url }}
     env:
       PR_NUMBER: ${{ github.event.pull_request.number }}
       COMMIT_SHA: ${{ github.event.pull_request.head.sha }}
       GITHUB_REPOSITORY: ${{ github.repository }}
-      ARGOCD_SERVER: ${{ secrets.ARGOCD_SERVER }}
-      ARGOCD_USERNAME: ${{ secrets.ARGOCD_USERNAME }}
-      ARGOCD_PASSWORD: ${{ secrets.ARGOCD_PASSWORD }}
+      EPHEMERAL_TF_BACKEND: ${{ secrets.EPHEMERAL_TF_BACKEND }}
     steps:
       - name: Checkout
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
-      - name: Create Values File
-        run: ./.infra/scripts/create-values-files.sh "$COMMIT_SHA" "$PR_NUMBER"
-      - name: Setup ArgoCD CLI
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: 1.6.6
+      - name: Terraform Backend
+        working-directory: ./.infra/terraform
         run: |
-          curl -sSL -o argocd-linux-amd64 https://github.com/argoproj/argo-cd/releases/latest/download/argocd-linux-amd64
-          sudo install -m 555 argocd-linux-amd64 /usr/local/bin/argocd
-          rm argocd-linux-amd64
-      - name: Login to ArgoCD
-        run: argocd login "$ARGOCD_SERVER" --username "$ARGOCD_USERNAME" --password "$ARGOCD_PASSWORD"
-      - name: Upsert Apps
-        id: upsert-apps
+          echo "$EPHEMERAL_TF_BACKEND" > ${{ runner.temp }}/backend.tf
+          echo "key = \"kubernetes/apps/${{ github.repository }}/ephemeral/pr-$PR_NUMBER/terraform.tfstate\"" >> ${{ runner.temp }}/backend.tf
+          chmod 200 ${{ runner.temp }}/backend.tf
+      - name: Setup Kubectl
+        uses: azure/setup-kubectl@v3
+        with:
+          version: "latest"
+      - name: Setup Kubeconfig
+        run: |
+          echo "$KUBECONFIG" > ${{ runner.temp }}/kubeconfig
+          chmod 600 ${{ runner.temp }}/kubeconfig
+      - name: Terraform Init
+        working-directory: ./.infra/terraform/ephemeral
+        run: terraform init -backend-config=${{ runner.temp }}/backend.tf
+      - name: Terraform Apply
+        working-directory: ./.infra/terraform/ephemeral
+        id: tf-apply
         run: |
           REPO_NAME=$(echo $GITHUB_REPOSITORY | sed 's/.*\///g')
           NAMESPACE=$(echo $REPO_NAME | sed 's/\//-/g')-pr-$PR_NUMBER
-          ./.infra/scripts/create-argo-cd-app.sh "$NAMESPACE-front" "$NAMESPACE" "$COMMIT_SHA" "/tmp/front.values.yaml" "front"
-          ./.infra/scripts/create-argo-cd-app.sh "$NAMESPACE-back" "$NAMESPACE" "$COMMIT_SHA" "/tmp/back.values.yaml" "back"
+          terraform apply \
+            -auto-approve \
+            -var "vault_token=$VAULT_TOKEN" \
+            -var "vault_address=$VAULT_ADDR" \
+            -var "namespace=$NAMESPACE" \
+            -var "image_tags=$COMMIT_SHA" \
+            -var "charts_target_revision=${{ github.head_ref }}" \
+            -var "kube_config_path=${{ runner.temp }}/kubeconfig"
           echo "frontend-url=https://$NAMESPACE.do.moreiradj.net" >> $GITHUB_OUTPUT
 
   build:
