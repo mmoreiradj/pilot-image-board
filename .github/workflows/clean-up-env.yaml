@@ -1,60 +1,60 @@
 name: Clean Up Argo App and Namespace
 
 on:
-  workflow_call:
-    inputs:
-      namespace:
-        description: "Namespace to clean up"
-        required: true
-        type: string
-  workflow_dispatch:
-    inputs:
-      namespace:
-        description: "Namespace to clean up"
-        required: true
-        type: string
   pull_request:
     types: [closed]
 
 jobs:
   clean-up:
     name: Clean Up
-    runs-on: self-hosted
+    runs-on: ubuntu-latest
     env:
-      HOME: /tmp/runner
-      ARGOCD_SERVER: ${{ secrets.ARGOCD_SERVER }}
-      ARGOCD_USERNAME: ${{ secrets.ARGOCD_USERNAME }}
-      ARGOCD_PASSWORD: ${{ secrets.ARGOCD_PASSWORD }}
+      PR_NUMBER: ${{ github.event.pull_request.number }}
+      GITHUB_REPOSITORY: ${{ github.repository }}
     steps:
-      - name: Setup Argo CD CLI
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: 1.6.6
+      - name: Terraform Backend
+        working-directory: ./.infra/terraform
         run: |
-          if command -v argocd &> /dev/null
-          then
-            echo "argocd is already installed"
-            exit 0
-          fi
-          curl -sSL -o argocd-linux-amd64 https://github.com/argoproj/argo-cd/releases/latest/download/argocd-linux-amd64
-          install -m 555 argocd-linux-amd64 /usr/local/bin/argocd
-          rm argocd-linux-amd64
-      - name: Login to ArgoCD
-        run: argocd login "$ARGOCD_SERVER" --username "$ARGOCD_USERNAME" --password "$ARGOCD_PASSWORD" --grpc-web
-      - name: Delete Argo App
-        run: argocd app delete --grpc-web --yes --selector "target-ns=${{ inputs.namespace }}"
+          echo "$EPHEMERAL_TF_BACKEND" > /tmp/backend.tf
+          echo "key = \"kubernetes/apps/${{ github.repository }}/ephemeral/pr-$PR_NUMBER/terraform.tfstate\"" >> /tmp/backend.tf
+          chmod 200 /tmp/backend.tf
       - name: Setup Kubectl
         uses: azure/setup-kubectl@v3
         with:
           version: "latest"
-      - name: Delete Namespace
+      - name: Setup Kubeconfig
         run: |
           echo "$KUBECONFIG" > /tmp/kubeconfig
           chmod 600 /tmp/kubeconfig
-          kubectl delete ns "${{ inputs.namespace }}" --kubeconfig /tmp/kubeconfig
-          rm /tmp/kubeconfig
+      - name: Terraform Init
+        working-directory: ./.infra/terraform/ephemeral
+        run: terraform init -backend-config=/tmp/backend.tf
+      - name: Terraform Destroy
+        working-directory: ./.infra/terraform/ephemeral
+        id: tf-apply
+        run: |
+          REPO_NAME=$(echo $GITHUB_REPOSITORY | sed 's/.*\///g')
+          NAMESPACE=$(echo $REPO_NAME | sed 's/\//-/g')-pr-$PR_NUMBER
+          terraform destroy \
+            -auto-approve \
+            -var "vault_token=$VAULT_TOKEN" \
+            -var "vault_address=$VAULT_ADDR" \
+            -var "namespace=$NAMESPACE" \
+            -var "image_tags=$COMMIT_SHA" \
+            -var "charts_target_revision=${{ github.head_ref }}" \
+            -var "kube_config_path=/tmp/kubeconfig"
       - name: Comment on PR
-        if: github.event_name == 'pull_request'
         uses: thollander/actions-comment-pull-request@v2
         with:
           message: |
-            :white_check_mark: Cleaned up namespace `${{ inputs.namespace }}`
+            :white_check_mark: Cleaned up ephemeral deployment !
 
             :wave: Thanks for introducing bugs to the codebase!
