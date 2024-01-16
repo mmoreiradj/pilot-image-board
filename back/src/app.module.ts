@@ -12,9 +12,24 @@ import { HealthModule } from './health/health.module';
 import { ThrottlerModule } from '@nestjs/throttler';
 import { config } from './common/config/app.config';
 import { ImagesModule } from './images/images.module';
+import { LoggerModule } from 'nestjs-pino';
+import { AppConfigService } from './common/config/app-config.service';
 
 @Module({
   imports: [
+    LoggerModule.forRootAsync({
+      useFactory: (config: AppConfigService) => ({
+        pinoHttp: {
+          level: config.logLevel,
+          autoLogging: false,
+          transport:
+            config.nodeEnv !== 'production'
+              ? { target: 'pino-pretty' }
+              : undefined,
+        },
+      }),
+      inject: [AppConfigService],
+    }),
     ThrottlerModule.forRoot([
       {
         name: 'api',
