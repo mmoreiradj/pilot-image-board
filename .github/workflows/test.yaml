@@ -26,17 +26,19 @@ jobs:
       - name: Terraform Backend
         working-directory: ./.infra/terraform
         run: |
-          echo "$EPHEMERAL_TF_BACKEND" > ${{ runner.temp }}/backend.tf
-          echo "key = \"kubernetes/apps/${{ github.repository }}/ephemeral/pr-$PR_NUMBER/terraform.tfstate\"" >> ${{ runner.temp }}/backend.tf
-          chmod 200 ${{ runner.temp }}/backend.tf
+          echo "$EPHEMERAL_TF_BACKEND" > backend.tf
+          echo "key = \"kubernetes/apps/${{ github.repository }}/ephemeral/pr-$PR_NUMBER/terraform.tfstate\"" >> backend.tf
+          chmod 200 backend.tf
       - name: Setup Kubectl
         uses: azure/setup-kubectl@v3
         with:
           version: "latest"
       - name: Setup Kubeconfig
         run: |
-          echo "$KUBECONFIG" > ${{ runner.temp }}/kubeconfig
-          chmod 200 ${{ runner.temp }}/kubeconfig
+          echo "$KUBECONFIG" > kubeconfig
+          chmod 200 kubeconfig
       - name: Terraform Init
         working-directory: ./.infra/terraform/ephemeral
-        run: terraform init -backend-config=${{ runner.temp }}/backend.tf
+        run: |
+
+          terraform init -backend-config=backend.tf
