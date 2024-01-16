@@ -1,19 +1,14 @@
 name: test-ci
 
 on:
-  workflow_dispatch:
-    inputs:
-      pr_number:
-        description: "PR Number"
-        required: true
-        default: "0"
+  push:
 
 jobs:
   clean-up:
     name: Clean Up
     runs-on: ubuntu-latest
     env:
-      PR_NUMBER: ${{ inputs.pr_number }}
+      PR_NUMBER: 2
       GITHUB_REPOSITORY: ${{ github.repository }}
     steps:
       - name: Checkout
