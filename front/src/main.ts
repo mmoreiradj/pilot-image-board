@@ -27,6 +27,8 @@ library.add(
   faArrowRight
 );
 
+console.log("Hello world");
+
 createApp(App)
   .component("font-awesome-icon", FontAwesomeIcon)
   .use(router)
