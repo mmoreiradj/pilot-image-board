@@ -40,7 +40,7 @@ jobs:
 
             IFS='.' read -r major minor patch <<< "$current_version"
             new_minor=$((minor + 1))
-            new_version="$major.$new_minor.$patch"
+            new_version="$major.$new_minor.0"
             yq eval -i ".version = $new_version" "$chart_file"
           }
 
