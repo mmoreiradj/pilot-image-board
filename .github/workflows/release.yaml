@@ -35,13 +35,13 @@ jobs:
             local app_version="${APP_VERSION#v}"
 
             yq eval -i ".appVersion = \"$app_version\"" "$chart_file"
-            
+
             current_version=$(awk '/version:/ {print $2}' "$chart_file")
-            
+
             IFS='.' read -r major minor patch <<< "$current_version"
             new_minor=$((minor + 1))
             new_version="$major.$new_minor.$patch"
-            yq eval -i ".version = \"$new_version\"" "$chart_file"
+            yq eval -i ".version = $new_version" "$chart_file"
           }
 
           upgrade_chart .infra/charts/front/Chart.yaml
