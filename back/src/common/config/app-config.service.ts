@@ -7,6 +7,10 @@ import { S3ModuleOptions } from 'nestjs-s3';
 export class AppConfigService {
   constructor(private readonly configService: ConfigService<Config>) {}
 
+  get nodeEnv(): string {
+    return this.configService.getOrThrow<string>('NODE_ENV');
+  }
+
   get datasourceUrl(): string {
     const host = this.configService.getOrThrow<string>('PG_HOST');
     const port = this.configService.getOrThrow<string>('PG_PORT');
@@ -50,5 +54,9 @@ export class AppConfigService {
 
   get s3BucketName(): string {
     return this.configService.getOrThrow<string>('S3_BUCKET_NAME');
+  }
+
+  get logLevel(): string {
+    return this.configService.getOrThrow<string>('LOG_LEVEL');
   }
 }

@@ -2,6 +2,15 @@ import { z } from 'zod';
 
 export const configSchema = z.object({
   NODE_ENV: z.enum(['development', 'production', 'test']),
+  LOG_LEVEL: z.enum([
+    'trace',
+    'debug',
+    'info',
+    'warn',
+    'error',
+    'fatal',
+    'silent',
+  ]),
   PORT: z.string(),
 
   PG_HOST: z.string(),
